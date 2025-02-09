@@ -1,6 +1,6 @@
 # CS5780-Projects
-## Project 1
-Simplified SSL (Secure Socket Layer) [README.md](Project1/README.md) 
+## Project 1 - Simplified SSL (Secure Socket Layer) 
+[README.md](Project1/README.md) 
 
 ![SSL](Project1/SSL.png)
 
