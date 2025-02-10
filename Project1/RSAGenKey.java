@@ -7,16 +7,10 @@
 //        Two files will be created.: pub_key.txt and pri_key.txt.  pub_key.txt contains a public key in the following format:
 //
 //        e = 8311
-//
 //        n = 31005883
-//
 //        pri_key.txt contains the corresponding private key in the following format:
-//
 //        d = 11296191
-//
 //        n = 31005883
-//
-//
 //
 //        If the program takes p, q and e as the input (java RSAGenKey p q e), it should generate the corresponding private key. The key pair should also be saved in two files as described above. For example
 //
@@ -33,29 +27,25 @@ import java.util.Random;
 
 public class RSAGenKey {
     private static FileOutputStream out = null;
-    private static Random rnd = new Random();
+    private static final Random rnd = new Random();
     private static BigInteger p = null;
     private static BigInteger q = null;
     private static BigInteger e = null;
     private static BigInteger d = null;
+    private static BigInteger n = null;
+    private static BigInteger phi = null;
     private static int k = 0;
 
     public static void main(String args[]) throws IOException{
-        if (args.length==1){
+        if (args.length == 1){
             k = Integer.parseInt(args[0]);
             p = BigInteger.probablePrime(k,rnd);
             q = BigInteger.probablePrime(k,rnd);
+            n = p.multiply(q);
+            phi = phiFN(Integer.parseInt(p.toString()),Integer.parseInt(q.toString())); //get the phi value
+            e = getE(phi); //get e value based on phi
+            d = e.modInverse(phi); // Inverse of e mod Phi(n)
 
-            BigInteger phi = phiFN(Integer.parseInt(p.toString()),Integer.parseInt(q.toString())); //get the phi value
-            getE(phi); //get e value based on phi
-
-            writeToFile();
-        }
-
-        else if(args.length==3){
-            p = BigInteger.valueOf(Integer.parseInt(args[0]));
-            q = BigInteger.valueOf(Integer.parseInt(args[1]));
-            e = BigInteger.valueOf(Integer.parseInt(args[2]));
             writeToFile();
         }
         else{
@@ -65,50 +55,20 @@ public class RSAGenKey {
 
     public static BigInteger phiFN(int input1, int input2){
         if (isPrime(BigInteger.valueOf(input1))){
-            return BigInteger.valueOf((input1-1)*(input2-1));
+            return BigInteger.valueOf((long) (input1 - 1) * (input2 - 1));
         }
         else{
             return BigInteger.valueOf(-1);
         }
     }
 
-    public static void writeToFile() throws IOException{
-        try {
-            out = new FileOutputStream("pub_key.txt");
-            out.write(("e = "+e+"").getBytes());
-            out.write(("\nn = "+p.multiply(q)).getBytes());
-
-            BigInteger phi = phiFN(Integer.parseInt(p.toString()),Integer.parseInt(q.toString()));
-            BigInteger gcd = e.gcd(phi);
-
-            if (gcd.compareTo(BigInteger.valueOf(1))==0){
-            }
-            else {
-                System.out.println("Error GCD is not equal to 1");
-            }
-            d = e.modInverse(phi);
-
-            out = new FileOutputStream("pri_key.txt");
-            out.write(("d = "+d+"").getBytes());
-            out.write(("\nn = "+p.multiply(q)).getBytes());
-        }
-        catch (FileNotFoundException ex){
-        }
-        finally{
-            if (out!=null) {
-                out.close();
-            }
-        }
-    }
-
-    public static void getE(BigInteger input){
+    public static BigInteger getE(BigInteger input){
         ArrayList<BigInteger> gcd = new ArrayList<>();
         BigInteger index = BigInteger.valueOf(0);
 
         while (true){
             if (index.compareTo(BigInteger.valueOf(9999)) == 1){
-                e = gcd.get(rnd.nextInt(gcd.size()));
-                break;
+                return e = gcd.get(rnd.nextInt(gcd.size()));
             }
             else{
                 if (input.gcd(index).compareTo(BigInteger.valueOf(1))==0){
@@ -121,12 +81,13 @@ public class RSAGenKey {
         }
     }
 
+    // A list of functions to check if a number is prime
     public static boolean isPrime(BigInteger number) {
         //check via BigInteger.isProbablePrime(certainty)
         if (!number.isProbablePrime(5))
             return false;
 
-        //check if even
+        //check if even, even is definitely not prime
         BigInteger two = new BigInteger("2");
         if (!two.equals(number) && BigInteger.ZERO.equals(number.mod(two)))
             return false;
@@ -138,4 +99,29 @@ public class RSAGenKey {
         }
         return true;
     }
+
+    public static void writeToFile() throws IOException{
+        try {
+            if(e.gcd(phi).compareTo(BigInteger.valueOf(1))!=0){
+                System.err.println("Error GCD is not equal to 1"); // Meaning they are not relative prime
+            }
+
+            out = new FileOutputStream("pub_key.txt");
+            out.write(("e = " + e + "\nn = " + n).getBytes());
+//            out.write(("\nn = " + p.multiply(q)).getBytes());
+
+            out = new FileOutputStream("pri_key.txt");
+            out.write(("d = " + d + "\nn = " + n).getBytes());
+//            out.write(("\nn = " + p.multiply(q)).getBytes());
+        }
+        catch (FileNotFoundException ex){
+            // pass
+        }
+        finally{
+            if (out!=null) {
+                out.close();
+            }
+        }
+    }
+
 }
