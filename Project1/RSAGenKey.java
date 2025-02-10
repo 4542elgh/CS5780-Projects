@@ -36,7 +36,7 @@ public class RSAGenKey {
     private static BigInteger phi = null;
     private static int k = 0;
 
-    public static void main(String args[]) throws IOException{
+    public static void main(String[] args) throws IOException{
         if (args.length == 1){
             k = Integer.parseInt(args[0]);
             p = BigInteger.probablePrime(k,rnd);
@@ -108,11 +108,9 @@ public class RSAGenKey {
 
             out = new FileOutputStream("pub_key.txt");
             out.write(("e = " + e + "\nn = " + n).getBytes());
-//            out.write(("\nn = " + p.multiply(q)).getBytes());
 
             out = new FileOutputStream("pri_key.txt");
             out.write(("d = " + d + "\nn = " + n).getBytes());
-//            out.write(("\nn = " + p.multiply(q)).getBytes());
         }
         catch (FileNotFoundException ex){
             // pass
@@ -123,5 +121,4 @@ public class RSAGenKey {
             }
         }
     }
-
 }

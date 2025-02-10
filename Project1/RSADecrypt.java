@@ -11,11 +11,9 @@ public class RSADecrypt {
     private static FileOutputStream out = null;
     private static String output="";
 
-    public static void main(String args[]){
+    public static void main(String[] args){
         String encryptedFilePath = args[0];
-//        String encryptedFilePath = "src/test.enc"; //this is for IDE execution
         String privateKeyPath = args[1];
-//        String privateKeyPath = "src/pri_key.txt"; //this is for IDE execution
 
         try {
             cipherString = readEncryptedFile(encryptedFilePath, "encryptedText");
@@ -39,22 +37,22 @@ public class RSADecrypt {
                 char c = (char) (Integer.parseInt(plaintextArray[i].substring(4,6))+97);
 
                 if (a == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
                     output+=a;
                 }
                 if (b == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=b;
+                    output += b;
                 }
                 if (c == '{'){
                     output += " ";
                 }
                 else{
-                    output +=c;
+                    output += c;
                 }
             }
             else if (plaintextArray[i].length()==5){
@@ -63,40 +61,40 @@ public class RSADecrypt {
                 char c = (char)  (Integer.parseInt(plaintextArray[i].substring(3,5))+97);
 
                 if (a == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=a;
+                    output += a;
                 }
                 if (b == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=b;
+                    output += b;
                 }
                 if (c == '{'){
                     output += " ";
                 }
                 else{
-                    output +=c;
+                    output += c;
                 }
             }
             else if (plaintextArray[i].length()==4){
-                output+="a";
+                output += "a";
                 char a = (char)  (Integer.parseInt(plaintextArray[i].substring(0,2))+97);
                 char b = (char)  (Integer.parseInt(plaintextArray[i].substring(2,4))+97);
 
                 if (a == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=a;
+                    output += a;
                 }
                 if (b == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=b;
+                    output += b;
                 }
             }
 
@@ -106,16 +104,16 @@ public class RSADecrypt {
                 char b = (char)  (Integer.parseInt(plaintextArray[i].substring(1,3))+97);
 
                 if (a == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=a;
+                    output += a;
                 }
                 if (b == '{'){
-                    output+=" ";
+                    output += " ";
                 }
                 else{
-                    output+=b;
+                    output += b;
                 }
             }
 
@@ -132,20 +130,6 @@ public class RSADecrypt {
         }
     }
 
-    private static void writeToFile() throws IOException{
-        try {
-            out = new FileOutputStream("test.dec");
-            out.write(output.getBytes());
-        }
-        catch (FileNotFoundException ex){
-        }
-        finally{
-            if (out!=null) {
-                out.close();
-            }
-        }
-    }
-
     private static String readEncryptedFile(String path, String type) throws IOException {
         FileInputStream in = null;
         String output = "";
@@ -153,25 +137,19 @@ public class RSADecrypt {
             in = new FileInputStream(path);
             int c;
             while ((c = in.read()) != -1) {
-                if (type.equals("key")){
-                    if (c!=13){
-                        output+=(char)c;
-                    }
+                if (type.equals("key") && c!=13){
+                    output += (char)c;
                 }
                 else{
-                    output+=(char)c;
+                    output += (char)c;
                 }
             }
-        }finally {
+        } finally {
             if (in != null) {
                 in.close();
             }
         }
         return output;
-    }
-
-    private static String decipherFN(BigInteger input){
-        return input.modPow(d,n)+"";
     }
 
     private static void readPrivateKey(String privateKey) throws IOException{
@@ -180,4 +158,25 @@ public class RSADecrypt {
         d = new BigInteger(temp[0].split("=")[1].trim());
         n = new BigInteger(temp[1].split("=")[1].trim());
     }
+
+    // M = C^d mod n
+    private static String decipherFN(BigInteger input){
+        return input.modPow(d,n)+"";
+    }
+
+    private static void writeToFile() throws IOException{
+        try {
+            out = new FileOutputStream("test.dec");
+            out.write(output.getBytes());
+        }
+        catch (FileNotFoundException ex){
+            ex.printStackTrace();
+        }
+        finally{
+            if (out!=null) {
+                out.close();
+            }
+        }
+    }
+
 }

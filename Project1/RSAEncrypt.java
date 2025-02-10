@@ -6,11 +6,9 @@ public class RSAEncrypt {
     public static BigInteger n = null;
     private static FileOutputStream out = null;
 
-    public static void main(String args[]){
-        String plaintext = args[0]; //this is for terminal execution
-    //       String plaintext = "src/test.txt"; //this is for IDE execution
+    public static void main(String[] args){
+        String plaintext = args[0];
         String publicKey = args[1];
-    //       String publicKey = "src/pub_key.txt"; //this is for IDE execution
         String fileOutput="";
 
         try {
@@ -30,7 +28,7 @@ public class RSAEncrypt {
 
         try {
             writeToFile(outputingArray);
-        }catch (IOException e){
+        } catch (IOException e){
             e.printStackTrace();
         }
     }
@@ -44,12 +42,12 @@ public class RSAEncrypt {
             while ((c = in.read()) != -1) {
                 if (type.equals("key")){
                     if (c!=13){
-                        output+=(char)c;
+                        output += (char)c;
                     }
                 }
                 else{
                     if (c!=13 && c!=10 && c!=44 && c!=46){
-                        output+=(char)c;
+                        output += (char)c;
                     }
                 }
             }
@@ -73,7 +71,7 @@ public class RSAEncrypt {
     }
 
    private static String[] readThreeByte(String plaintext){ //this will return the entire string into array of 3 character each element
-       //this will determine if length/3 will have remainder (which we need to add 1 to endindex, other wise we will miss some character)
+       //this will determine if length/3 will have remainder (which we need to add 1 to endindex, otherwise we will miss some character)
         int endIndex;
         if ((plaintext.length()%3)==0){
             endIndex=plaintext.length()/3;
@@ -102,7 +100,6 @@ public class RSAEncrypt {
                 temp[i] = plaintext.substring(3*i,3*i+3);
             }
         }
-
         return temp;
     }
 
@@ -111,14 +108,14 @@ public class RSAEncrypt {
         for (int i = 0; i < input.length(); i++) {
             if (input.charAt(i)>=97 && input.charAt(i)<=122){
                 if (input.charAt(i)-97<10){
-                    temp+="0"+(input.charAt(i)-97);
+                    temp += "0"+(input.charAt(i)-97);
                 }
                 else{
-                    temp+=(input.charAt(i)-97)+"";
+                    temp += (input.charAt(i)-97)+"";
                 }
             }
             else if (input.charAt(i)==32){
-                temp+=(26+"");
+                temp += (26+"");
             }
             else{
                 System.err.println("Error converting");
@@ -126,14 +123,6 @@ public class RSAEncrypt {
         }
         return temp;
     }
-
-    private static void printArray(String[] input){
-        for (int i = 0; i < input.length; i++) {
-            System.out.println(i);
-            System.out.println(input[i]);
-        }
-    }
-
 
     public static void writeToFile(BigInteger[] input) throws IOException{
         try {
