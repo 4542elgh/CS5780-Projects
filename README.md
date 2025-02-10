@@ -2,7 +2,7 @@
 ## Project 1 - Simplified SSL (Secure Socket Layer) 
 [README.md](Project1/README.md) 
 
-![SSL](Project1/SSL.png)
+![SSL](Project1/screenshots/SSL.png)
 
 Conceptually a Secure Socket Layer can be thought of as a pair of sockets between a server and a client where communication on the actual network socket is secure.
 
