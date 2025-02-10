@@ -65,6 +65,9 @@ The first step is to assemble packets which will be transmitted over the network
 
 **Hash Function (Calculating the checksum and Assembling packets):**
 $$h(X) := [\Sigma^{ndatabytes}_{i=1} (pattern\ \&\ data\_btes[i]) * k] * mod\ 2^{8*ncheckbytes}$$
+GitHub cannot render the above Latex, so here is a screenshot
+![](screenshots/HashFormula.png)
+
 Where:
 - ndatabytes is the number of bytes in the packet
 - data_bytes[i] is the $i^{th}$ data byte in the packet
