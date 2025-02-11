@@ -2,6 +2,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Random;
 
+// RUN: java -Dprime_size=500 .\RSA.java -gen "hello world"
 public class RSA {
     private static final Random rnd = new Random(); // Prime seed
     private static int k = 500; // This should be a user input, determine prime number length 2^k
