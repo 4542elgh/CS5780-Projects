@@ -28,7 +28,7 @@ public class RSA {
         }
     }
 
-    private static class KU {
+    public static class KU {
         BigInteger e;
         BigInteger n;
 
@@ -43,7 +43,7 @@ public class RSA {
         }
     }
 
-    private static class KR {
+    public static class KR {
         BigInteger d;
         BigInteger n;
 
@@ -200,5 +200,20 @@ public class RSA {
         } else {
             System.out.println("KU(KR(M))=" + output);
         }
+    }
+
+    /**
+     * Converts a string to a list of BigIntegers representing the ASCII values of the characters.
+     * @param payload
+     * @return List of BigIntegers representing the ASCII values of the characters
+     */
+    public static ArrayList<BigInteger> StringToBigIntegerList(String payload) {
+        ArrayList<BigInteger> payloadBigInt = new ArrayList<>(); // Convert user input string to ASCII int representation of bytes
+
+        // Get string byte code then convert them to ascii
+        for(int i = 0; i < payload.length(); i++){
+            payloadBigInt.add(BigInteger.valueOf((int) payload.charAt(i)));
+        }
+        return payloadBigInt;
     }
 }
