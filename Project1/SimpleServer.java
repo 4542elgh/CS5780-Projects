@@ -63,6 +63,26 @@ public class SimpleServer implements Runnable {
       }
    } 
 
+   // Method to transform lower case characters to upppercase characters and vice versa
+   public static String serverModifyData(String data) {
+      StringBuilder formattedData = new StringBuilder();
+
+      for(char c: data.toCharArray()){
+         if(Character.isUpperCase(c)){
+            formattedData.append(Character.toLowerCase(c));
+         } 
+         else if(Character.isLowerCase(c)){
+            formattedData.append(Character.toUpperCase(c));
+         } 
+         else {
+            formattedData.append(c);
+         }
+
+      }
+
+      return formattedData.toString();
+   }
+
 
   public static void main(String[] argv) throws Exception {
      if (argv.length != 1) {
