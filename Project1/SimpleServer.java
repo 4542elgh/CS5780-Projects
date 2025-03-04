@@ -59,11 +59,23 @@ public class SimpleServer implements Runnable {
             }
             ArrayList<BigInteger> username = RSA.decryption(handshake.get(0), private_key);
             System.out.println("username: " + RSA.BigIntegerListToString(username));
-            ArrayList<BigInteger> company = RSA.verifying(handshake.get(1), new RSA.KU(new BigInteger("65537"), new BigInteger("1187")));
+
+            Properties profileProperties = new Properties();
+            try (FileInputStream input = new FileInputStream("users.txt")) {
+               profileProperties.load(input);
+            } catch (IOException e) {
+               System.out.println("Error reading profile file: " + e.getMessage());
+               throw e;
+            }
+            String[] userPublicKey = profileProperties.getProperty(RSA.BigIntegerListToString(username) + ".public_key").replaceAll("[{}]", "").split(",");
+
+            RSA.KU userKU = new RSA.KU(new BigInteger(userPublicKey[0]), new BigInteger(userPublicKey[1]));
+            ArrayList<BigInteger> company = RSA.verifying(handshake.get(1), userKU);
+            System.out.println("company: " + RSA.BigIntegerListToString(company));
             ArrayList<BigInteger> key = RSA.decryption(handshake.get(2), private_key);
             System.out.println("key: " + RSA.BigIntegerListToString(key));
 
-            sock.getOutputStream().write(("Hello " + RSA.BigIntegerListToString(username) + ", I have received your key: " + RSA.BigIntegerListToString(key) + "\n").getBytes());
+            sock.getOutputStream().write(("Hello " + RSA.BigIntegerListToString(username) + " from " + RSA.BigIntegerListToString(company) + ", I have received your key: " + RSA.BigIntegerListToString(key) + "\n").getBytes());
             // flush output if no more data on input
             if (sock.getInputStream().available() == 0) {
                sock.getOutputStream().flush();
