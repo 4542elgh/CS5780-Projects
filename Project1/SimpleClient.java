@@ -41,27 +41,34 @@ public class SimpleClient {
 
       // Encrypt the username and add to encryptedHandshake
       ArrayList<BigInteger> encryptedHandshake = RSA.encryption(RSA.StringToBigIntegerList(username), serverKU);
+      encryptedHandshake.add(BigInteger.valueOf(33));
       // Sign the encrypted company with the client private key
       encryptedHandshake.addAll(RSA.signing(RSA.StringToBigIntegerList(profileProperties.getProperty("company")), clientKR));
+      encryptedHandshake.add(BigInteger.valueOf(33));
       // Encrypt the one time key with the server public key
       encryptedHandshake.addAll(RSA.encryption(RSA.StringToBigIntegerList(key), serverKU));
-
+      encryptedHandshake.add(BigInteger.valueOf(33));
       // Send the encrypted handshake to the server
       for(int z = 0; z < encryptedHandshake.size(); z++) {
-         s.getOutputStream().write((char)encryptedHandshake.get(z).intValue());
+         if(encryptedHandshake.get(z).equals(BigInteger.valueOf(33))) {
+            s.getOutputStream().write('!');
+            continue;
+         }
+      // for(int z = 0; z < 1; z++) {
+         s.getOutputStream().write((encryptedHandshake.get(z).toString() + '\n').getBytes());
       }
       s.getOutputStream().flush();
 
       // read data from keyboard until end of file
-      while ((c = System.in.read()) != -1) {
+      // while ((c = System.in.read()) != -1) {
 
-         // send it to server
-         s.getOutputStream().write(c);
-         // if carriage return, flush stream
-         if ((char) c == '\n' || (char) c == '\r')
-            s.getOutputStream().flush();
-         ++k;
-      }
+      //    // send it to server
+      //    s.getOutputStream().write(c);
+      //    // if carriage return, flush stream
+      //    if ((char) c == '\n' || (char) c == '\r')
+      //       s.getOutputStream().flush();
+      //    ++k;
+      // }
       s.getOutputStream().flush();
 
       // read until end of file or same number of characters

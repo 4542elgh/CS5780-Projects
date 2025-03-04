@@ -216,4 +216,12 @@ public class RSA {
         }
         return payloadBigInt;
     }
+
+    public static String BigIntegerListToString(ArrayList<BigInteger> payloadBigInt) {
+        String output = "";
+        for (int i = 0; i < payloadBigInt.size(); i++) {
+            output += (char)payloadBigInt.get(i).intValue();
+        }
+        return output;
+    }
 }
