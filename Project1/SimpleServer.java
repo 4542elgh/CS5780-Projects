@@ -15,6 +15,7 @@ public class SimpleServer implements Runnable {
    // server's port
    private int port;
 
+   // server's private key
    private RSA.KR private_key;
 
    public SimpleServer(int p) throws Exception {
@@ -43,6 +44,8 @@ public class SimpleServer implements Runnable {
          try {
             System.out.println("connect...");
             int c;
+
+            // Extract 3 parts of the handshake, (username, company, key)
             ArrayList<ArrayList<BigInteger>> handshake = new ArrayList<ArrayList<BigInteger>>();
             String curr = "";
             while(handshake.size() < 3) {
@@ -55,11 +58,14 @@ public class SimpleServer implements Runnable {
                   }
                   curr += (char)c;
                }
-
             }
-            ArrayList<BigInteger> username = RSA.decryption(handshake.get(0), private_key);
-            System.out.println("username: " + RSA.BigIntegerListToString(username));
 
+            // Decrypt the username
+            String username = RSA.BigIntegerListToString(RSA.decryption(handshake.get(0), private_key));
+            System.out.println("username: " + username);
+
+            // Verify the company
+            RSA.KU userKU;
             Properties profileProperties = new Properties();
             try (FileInputStream input = new FileInputStream("users.txt")) {
                profileProperties.load(input);
@@ -67,15 +73,24 @@ public class SimpleServer implements Runnable {
                System.out.println("Error reading profile file: " + e.getMessage());
                throw e;
             }
-            String[] userPublicKey = profileProperties.getProperty(RSA.BigIntegerListToString(username) + ".public_key").replaceAll("[{}]", "").split(",");
+            // Get the public key for the user to decrypt the company
+            String[] userPublicKey = profileProperties.getProperty(username + ".public_key").replaceAll("[{}]", "").split(",");
+            userKU = new RSA.KU(new BigInteger(userPublicKey[0]), new BigInteger(userPublicKey[1]));
+            String company = RSA.BigIntegerListToString(RSA.verifying(handshake.get(1), userKU));
+            // If the company does not match the company in the profile, close the connection
+            if (!company.equals(profileProperties.getProperty(username + ".company"))) {
+               System.out.println("company mismatch");
+               sock.close();
+               return;
+            }
+            System.out.println("company: " + company);
 
-            RSA.KU userKU = new RSA.KU(new BigInteger(userPublicKey[0]), new BigInteger(userPublicKey[1]));
-            ArrayList<BigInteger> company = RSA.verifying(handshake.get(1), userKU);
-            System.out.println("company: " + RSA.BigIntegerListToString(company));
-            ArrayList<BigInteger> key = RSA.decryption(handshake.get(2), private_key);
-            System.out.println("key: " + RSA.BigIntegerListToString(key));
+            // Decrypt the key
+            String key = RSA.BigIntegerListToString(RSA.decryption(handshake.get(2), private_key));
+            System.out.println("key: " + key);
 
-            sock.getOutputStream().write(("Hello " + RSA.BigIntegerListToString(username) + " from " + RSA.BigIntegerListToString(company) + ", I have received your key: " + RSA.BigIntegerListToString(key) + "\n").getBytes());
+            // Send a response to the client
+            sock.getOutputStream().write(("Hello " + username + " from " + company + ", I have received your key: " + key + "\n").getBytes());
             // flush output if no more data on input
             if (sock.getInputStream().available() == 0) {
                sock.getOutputStream().flush();
