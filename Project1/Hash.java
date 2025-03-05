@@ -158,13 +158,19 @@ public class Hash {
     }
 
     /**
-     * Prints the contents converting to chars.
+     * Prints the contents of the packet into binary numbers in the 8 bit long format
      *
      * @param result The integer array to print
      */
     public static void print(int[] result){
         for(int i = 0; i < result.length; i++) {
-            System.out.print((char)result[i]);
+            //Add padding
+            String temp = Integer.toBinaryString(result[i]);
+            for(int x = 0; x < 8 - temp.length(); x++) {
+                System.out.print("0");
+            }
+            System.out.print( Integer.toBinaryString(result[i]) + " ");
         }
+        System.out.println();
     }
 }
