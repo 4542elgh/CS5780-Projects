@@ -12,16 +12,18 @@ public class Hash {
      */
     public static void main(String[] args){
         Random rand = new Random();
-        ArrayList<Integer> data_bytes = new ArrayList<>();
+        //ArrayList<Integer> data_bytes = new ArrayList<>();
+        /* 
         int ndatabytes = -1;
         int ncheckbytes = -1;
         int pattern = -1;
         int k = -1;
-//        ArrayList<Integer> data_bytes = new ArrayList<>(Arrays.asList(Integer.valueOf(101), Integer.valueOf(181)));
-//        int ndatabytes = 3;
-//        int ncheckbytes = 1;
-//        int pattern = 123;
-//        int k = 7;
+        */
+        ArrayList<Integer> data_bytes = new ArrayList<>(Arrays.asList(Integer.valueOf(101), Integer.valueOf(181)));
+        int ndatabytes = 3;
+        int ncheckbytes = 1;
+        int pattern = 123;
+        int k = 7;
 
         try{
             if(args[0] != null && args[1] != null && args[2] != null && args[3] != null && args[4] != null){
@@ -44,22 +46,21 @@ public class Hash {
         int[] packet = generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, k);
         System.out.print("Packet: ");
         print(packet);
-        System.out.println();
 
         int[] oneTimeKey = generateOneTimeKey(packet.length, rand);
         System.out.print("One Time Key: ");
         print(oneTimeKey);
-        System.out.println();
+
+        int checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
+        System.err.println("Checksum: " + checksum);
 
         int[] encodedPacket = encodePacket(packet, oneTimeKey);
         System.out.print("Encoded Packet: ");
         print(encodedPacket);
-        System.out.println();
 
         int[] decodedPacket = decodePacket(encodedPacket, oneTimeKey);
         System.out.print("Decoded Packet: ");
         print(decodedPacket);
-        System.out.println();
     }
 
     /**

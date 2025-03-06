@@ -1,5 +1,8 @@
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -9,11 +12,11 @@ import java.util.Properties;
 public class SimpleClient {
 
    // network socket
-   private Socket s;
+   private Socket clientSocket;
 
    public SimpleClient(String host, int port) throws Exception {
       // open a connection to the server
-      s = new Socket(host, port);
+      clientSocket = new Socket(host, port);
    }
 
    // data transfer
@@ -51,26 +54,45 @@ public class SimpleClient {
       // Send the encrypted handshake to the server
       for(int z = 0; z < encryptedHandshake.size(); z++) {
          if(encryptedHandshake.get(z).equals(BigInteger.valueOf(33))) {
-            s.getOutputStream().write('!');
+            clientSocket.getOutputStream().write('!');
             continue;
          }
       // for(int z = 0; z < 1; z++) {
-         s.getOutputStream().write((encryptedHandshake.get(z).toString() + '\n').getBytes());
+         clientSocket.getOutputStream().write((encryptedHandshake.get(z).toString() + '\n').getBytes());
       }
-      s.getOutputStream().flush();
+      clientSocket.getOutputStream().flush();
 
-      // read data from keyboard until end of file
-      // while ((c = System.in.read()) != -1) {
 
-      //    // send it to server
-      //    s.getOutputStream().write(c);
-      //    // if carriage return, flush stream
-      //    if ((char) c == '\n' || (char) c == '\r')
-      //       s.getOutputStream().flush();
-      //    ++k;
-      // }
-      s.getOutputStream().flush();
 
+      //Client can communicate with the server
+      BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+      PrintWriter output  = new PrintWriter(clientSocket.getOutputStream(), true);
+      BufferedReader consoleInput = new BufferedReader(new InputStreamReader(System.in));
+      String userInput = "";
+
+
+      while((userInput = consoleInput.readLine()) != null) {
+         output.println(userInput);
+         System.out.println("Received from server: " + input.readLine());
+      }
+
+
+      /*  read data from keyboard until end of file
+      while ((c = System.in.read()) != -1) {
+         // send it to server
+
+
+
+         clientSocket.getOutputStream().write(c);
+         // if carriage return, flush stream
+         if ((char) c == '\n' || (char) c == '\r')
+         clientSocket.getOutputStream().flush();
+         i++;
+       }
+       */
+      clientSocket.getOutputStream().flush();
+
+      /* 
       // read until end of file or same number of characters
       // read from server
       while ((c = s.getInputStream().read()) != -1) {
@@ -78,9 +100,10 @@ public class SimpleClient {
          if (++i == k)
             break;
       }
+      */
       System.out.println();
       System.out.println("wrote " + i + " bytes");
-      s.close();
+      clientSocket.close();
    }
 
    public static void main(String[] argv) throws Exception {
