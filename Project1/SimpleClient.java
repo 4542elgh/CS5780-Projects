@@ -37,16 +37,21 @@ public class SimpleClient {
       int pattern = Integer.parseInt(profileProperties.getProperty("pattern"));
       
       int ndatabytes = Integer.parseInt(profileProperties.getProperty("ndatabytes"));
-      System.out.println(ndatabytes);
+      System.out.println("nDataBytes: " + ndatabytes);
       int ncheckbytes = Integer.parseInt(profileProperties.getProperty("ncheckbytes"));
 
+      System.out.println("One Time Key:");
       int K = Integer.parseInt(profileProperties.getProperty("k"));
-      int[] key = Hash.generateOneTimeKey(ndatabytes, new Random());
+
+      //Generate the one time key with the size of the packet length
+      int[] key = Hash.generateOneTimeKey(1 + ndatabytes + ncheckbytes, new Random());
       ArrayList<BigInteger> keyArrayList = new ArrayList<>();
       for (int x = 0; x < key.length; x++) {
          System.out.print((char)key[x]);
          keyArrayList.add(BigInteger.valueOf(key[x]));
       }
+      System.out.println();
+      System.out.println(keyArrayList.size());
       System.out.println();
       //String key = profileProperties.getProperty("k");
 
@@ -78,6 +83,7 @@ public class SimpleClient {
       // clientSocket.getOutputStream().flush();
 
 
+      System.out.print("User console input: ");
       String buff = "";
       // read data from keyboard until end of file
       while ((c = System.in.read()) != -1) {
@@ -95,12 +101,24 @@ public class SimpleClient {
                for(int x = index; x < upper_bound; x++) {
                   data_bytes.add((int) bytes[x]);
                }
+
+               //Generate the packet
+               System.out.println("Packet generated");
                int[] packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
-               for(int x = 0; x < packet.length; x++) {
-                  clientSocket.getOutputStream().write(packet[x]);
+               System.out.println("Packet length: " + packet.length);
+
+               //Here we need to encode the packet, getting an out of bounds error
+               
+               int[] encodedPacket = Hash.encodePacket(packet, key);
+               System.out.println("Encoded packet : " + encodedPacket.toString());
+
+               for(int x = 0; x < encodedPacket.length; x++) {
+                  clientSocket.getOutputStream().write(encodedPacket[x]);
                }
                clientSocket.getOutputStream().flush();
-               System.out.println("HERE");
+
+
+               System.out.println("HERE is the Server Response");
                index += ndatabytes;
                int received = 0;
                while((c = clientSocket.getInputStream().read()) != -1) { 
@@ -137,7 +155,6 @@ public class SimpleClient {
 
       // Turn the binary string into a char array
       char[] list1 = binaryString.toCharArray();
-
       //Loop through the char array
       for(char c: list1) {
          // Cast the char as an int and mod it by 8 to get the binary values

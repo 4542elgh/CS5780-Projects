@@ -91,6 +91,7 @@ public class SimpleServer implements Runnable {
             // Decrypt the key
             String key = RSA.BigIntegerListToString(RSA.decryption(handshake.get(2), private_key));
             System.out.println("key: " + key);
+            
 
 
             //Generate the packet but first get the values from the txt file
@@ -116,6 +117,12 @@ public class SimpleServer implements Runnable {
                   for(int i = 1; i < n+1; i++) {
                      data_bytes.add(packet[i]);
                   }
+
+                  // Decode the arriving packet here
+                  //int[] decodedPacket = Hash.decodePacket(packet, key);
+
+                  // Server checks the checksum attached to the packet
+                  // If checksums do no match, close the connection
                   int[] checksum = Hash.generateChecksum(data_bytes, pattern, K, ncheckbytes);
                   for(int z = 0; z < ncheckbytes; z++) {
                      if(checksum[z] != packet[ndatabytes + z + 1]) {
@@ -125,6 +132,7 @@ public class SimpleServer implements Runnable {
                      }
                   }
                   
+                  // Convert the words in the console input into uppercase or lower case
                   for(int i = 0; i < data_bytes.size(); i++) {
                      if (data_bytes.get(i) >= 97 && data_bytes.get(i) <= 122) {
                         data_bytes.set(i, data_bytes.get(i) - 32);
@@ -133,6 +141,8 @@ public class SimpleServer implements Runnable {
                         data_bytes.set(i, data_bytes.get(i) + 32);
                      }
                   }
+
+                  //Return the modified packet to the client
                   packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
                   System.out.println(packet.length);
                   for(int x = 0; x < packet.length; x++) {
@@ -143,7 +153,6 @@ public class SimpleServer implements Runnable {
                   System.out.println("HERE");
                }
             }
-
 
             this.socket.getOutputStream().flush();
             this.socket.close();
