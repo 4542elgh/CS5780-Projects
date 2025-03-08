@@ -23,9 +23,8 @@ public class SimpleClient {
    // data transfer
    public void execute() throws Exception {
       int c, k = 0, i = 0;
-
+      
       String username = "mickey";
-      String key = "xyz";
       // load the profile properties - contains user private key and server public key
       Properties profileProperties = new Properties();
       try (FileInputStream input = new FileInputStream(username + ".txt")) {
@@ -34,6 +33,21 @@ public class SimpleClient {
       } catch (IOException e) {
          e.printStackTrace();
       }
+      //Generate the packet but first get the values from the txt file
+      int pattern = Integer.parseInt(profileProperties.getProperty("pattern"));
+      
+      int ndatabytes = Integer.parseInt(profileProperties.getProperty("ndatabytes"));
+      System.out.println(ndatabytes);
+      int ncheckbytes = Integer.parseInt(profileProperties.getProperty("ncheckbytes"));
+
+      int K = Integer.parseInt(profileProperties.getProperty("k"));
+      int[] key = Hash.generateOneTimeKey(ndatabytes, new Random());
+      ArrayList<BigInteger> keyArrayList = new ArrayList<>();
+      for (int x = 0; x < key.length; x++) {
+         System.out.print((char)key[x]);
+         keyArrayList.add(BigInteger.valueOf(key[x]));
+      }
+      System.out.println();
       //String key = profileProperties.getProperty("k");
 
       // Get the public key from the server
@@ -50,7 +64,7 @@ public class SimpleClient {
       encryptedHandshake.addAll(RSA.signing(RSA.StringToBigIntegerList(profileProperties.getProperty("company")), clientKR));
       encryptedHandshake.add(BigInteger.valueOf(33));
       // Encrypt the one time key with the server public key
-      encryptedHandshake.addAll(RSA.encryption(RSA.StringToBigIntegerList(key), serverKU));
+      encryptedHandshake.addAll(RSA.encryption(keyArrayList, serverKU));
       encryptedHandshake.add(BigInteger.valueOf(33));
       // Send the encrypted handshake to the server
       for(int z = 0; z < encryptedHandshake.size(); z++) {
@@ -63,44 +77,51 @@ public class SimpleClient {
       }
       // clientSocket.getOutputStream().flush();
 
-      //Generate the packet but first get the values from the txt file
-      int pattern = Integer.parseInt(profileProperties.getProperty("pattern"));
-      int ndatabytes = Integer.parseInt(profileProperties.getProperty("ndatabytes"));
-      int ncheckbytes = Integer.parseInt(profileProperties.getProperty("ncheckbytes"));
-      int K = Integer.parseInt(profileProperties.getProperty("k"));
-      // The method in the hash requires a random number to generate the key. Im confused on how
-      // you would send the same random number to the server or if you would use K
-      Random rand  = new Random();
 
+      String buff = "";
       // read data from keyboard until end of file
       while ((c = System.in.read()) != -1) {
-
-         // Convert the message into an array of binary numbers (data bytes)
-         ArrayList<Integer> message = convertToArrayList(c);
-         // Create the packet, the one time key, and encode the packet
-         int[] packet = Hash.generatePacket(message, ndatabytes, ncheckbytes, pattern, K);
-         int[] oneTimeKey = Hash.generateOneTimeKey(packet.length, rand);
-         int[] encodedPacket = Hash.encodePacket(packet, oneTimeKey);
-         // send it to server
-
-         // Since the return types are int[], I use a for loop to go through each position
-         // in the encodedPacket array and print out to the server that int. It will be a bunch of weird symbols.
-         for( int x = 0; x < encodedPacket.length; x++) {
-            clientSocket.getOutputStream().write(encodedPacket[x]);
-         }
-
-         clientSocket.getOutputStream().write(c);
+         i += 1;
          // if carriage return, flush stream
-         if ((char) c == '\n' || (char) c == '\r')
-         clientSocket.getOutputStream().flush();
-         ++k;
+         if ((char) c == '\n' || (char) c == '\r') {
+            buff += c;
+            // System.out.println((int)c);
+            int index = 0;
+            byte[] bytes = buff.getBytes();
+            // System.out.println(bytes.length);
+            while(index < buff.length()) {
+               ArrayList<Integer> data_bytes = new ArrayList<>();
+               int upper_bound = Math.min(index + ndatabytes, bytes.length);
+               for(int x = index; x < upper_bound; x++) {
+                  data_bytes.add((int) bytes[x]);
+               }
+               int[] packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
+               for(int x = 0; x < packet.length; x++) {
+                  clientSocket.getOutputStream().write(packet[x]);
+               }
+               clientSocket.getOutputStream().flush();
+               System.out.println("HERE");
+               index += ndatabytes;
+               int received = 0;
+               while((c = clientSocket.getInputStream().read()) != -1) { 
+                  packet[received] = c;
+                  received++;
+                  if (received == packet.length) {
+                     break;
+                  }
+               }
+               for(int x = 1; x < packet.length - ncheckbytes; x++) {
+                  System.out.print((char)packet[x]);
+               }
+            }
+            buff = "";
+            break;
+         }
+         buff += (char) c;
+
+         // ++k;
        }
       clientSocket.getOutputStream().flush();
-
-      while((c = clientSocket.getInputStream().read()) != -1) {
-         System.out.write(c);
-         if(++i == k) break;
-      }
       System.out.println();
       System.out.println("wrote " + i + " bytes");
       clientSocket.close();

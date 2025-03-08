@@ -53,7 +53,7 @@ public class Hash {
         System.out.print("One Time Key: ");
         print(oneTimeKey);
 
-        int checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
+        int[] checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
         System.err.println("Checksum: " + checksum);
 
         int[] encodedPacket = encodePacket(packet, oneTimeKey);
@@ -76,21 +76,29 @@ public class Hash {
      * @return            An integer array representing the complete packet
      */
     public static int[] generatePacket(ArrayList<Integer> data_bytes, int ndatabytes, int ncheckbytes, int pattern, int k){
+        // System.out.println(data_bytes.size());
         // Use example data, get working operations first
         // This is the size of the packet
         int[] packet = new int[1 + ndatabytes + ncheckbytes];
         packet[0] = data_bytes.size();
 
+        int padding = ndatabytes - data_bytes.size();
         // Padding data_bytes to match ndatabytes
-        for(int i = 0; i < ndatabytes - data_bytes.size(); i++){
+        for(int i = 0; i < padding; i++){
             data_bytes.add(0);
         }
-
-        data_bytes.add(generateChecksum(data_bytes, pattern, k, ncheckbytes));
-
+        int[] checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
+        for(int b: checksum) {
+            // System.out.print(b + ", ");
+            data_bytes.add(b);
+        }
+        // System.out.println();
+        System.out.println(data_bytes);
+        // System.out.println("DataBytes:" + data_bytes.size());
         for(int i = 0; i < data_bytes.size(); i++){
             // From position 2 onward will be data_bytes with trailing 0 padding if necessary
             // Follow by checksumbytes
+            
             packet[1+i] = data_bytes.get(i);
         }
         return packet;
@@ -105,14 +113,18 @@ public class Hash {
      * @param ncheckbytes  Number of checksum bytes
      * @return             Checksum value
      */
-    public static int generateChecksum(ArrayList<Integer> data_bytes, int pattern, int k, int ncheckbytes){
+    public static int[] generateChecksum(ArrayList<Integer> data_bytes, int pattern, int k, int ncheckbytes){
         int checksum = 0;
         for(int i = 0; i < data_bytes.size(); i++){
             checksum += (data_bytes.get(i) & pattern);
         }
         checksum = checksum * k;
         checksum = checksum % (int) Math.pow(2, 8*ncheckbytes);
-        return checksum;
+        int[] result = new int[ncheckbytes];
+        for(int i = 0; i < ncheckbytes; i++){
+            result[i] = (checksum >> (8 * i)) & 0xFF;
+        }
+        return result;
     }
 
     /**
