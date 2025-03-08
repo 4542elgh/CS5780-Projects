@@ -95,26 +95,26 @@ public class SimpleServer implements Runnable {
             // Send a response to the client
             socket.getOutputStream().write(("Hello " + username + " from " + company + ", I have received your key: " + key + "\n").getBytes());
 
-            //Allow the socket to continue getting data and returning the data with flipped characters
-            try {
-               BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-               PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
-               String message = "";
-               System.out.println("connected");
 
-               while((message = input.readLine()) != null) {
-                  System.out.println("Received from client: " + message);
-                  //serverModifyData(message);
+            // read the bytes from the socket
+            // and convert the case
+            while((c = socket.getInputStream().read()) != -1) {
+               
+               if(c >= 97 && c <= 122) {
+                  c -= 32;
+               } 
+               else if (c >= 65 && c <=90) {
+                  c += 32;
                }
-
+               // write it back
+               socket.getOutputStream().write(c);
                // flush output if no more data on input
                if (socket.getInputStream().available() == 0) {
-                  this.socket.getOutputStream().flush();
+               socket.getOutputStream().flush();
                }
-
-            } catch (Exception exception) {
-               System.out.println(exception);
             }
+
+
             this.socket.getOutputStream().flush();
             this.socket.close();
             System.out.println("disconnect...");
@@ -133,18 +133,7 @@ public class SimpleServer implements Runnable {
             System.out.println("SERVER: " + e);
          }
       }
-   } 
-
-   // Method to transform lower case characters to upppercase characters and vice versa
-   public static int serverModifyData(int data) {
-      if ((data >= 97) && (data <= 122))
-         data -= 32;
-      else if ((data >= 65) && (data <= 90))
-         data += 32;
-
-      return data;
    }
-
 
   public static void main(String[] argv) throws Exception {
      if (argv.length != 1) {

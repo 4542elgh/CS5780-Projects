@@ -12,18 +12,18 @@ public class Hash {
      */
     public static void main(String[] args){
         Random rand = new Random();
-        //ArrayList<Integer> data_bytes = new ArrayList<>();
-        /* 
+        ArrayList<Integer> data_bytes = new ArrayList<>();
+         
         int ndatabytes = -1;
         int ncheckbytes = -1;
         int pattern = -1;
         int k = -1;
-        */
-        ArrayList<Integer> data_bytes = new ArrayList<>(Arrays.asList(Integer.valueOf(101), Integer.valueOf(181)));
-        int ndatabytes = 3;
-        int ncheckbytes = 1;
-        int pattern = 123;
-        int k = 7;
+        
+        //ArrayList<Integer> data_bytes = new ArrayList<>(Arrays.asList(Integer.valueOf(101), Integer.valueOf(181)));
+        //int ndatabytes = 3;
+        //int ncheckbytes = 1;
+        //int pattern = 123;
+        //int k = 7;
 
         try{
             if(args[0] != null && args[1] != null && args[2] != null && args[3] != null && args[4] != null){
@@ -35,12 +35,14 @@ public class Hash {
                     System.exit(1);
                 }
                 data_bytes.clear();
+                //Use this to convert input message in Simple Client into data bytes
                 for(int i = 0; i < args[4].length(); i++){
                     data_bytes.add((int)args[4].charAt(i));
                 }
             }
         } catch (ArrayIndexOutOfBoundsException e){
-//            e.printStackTrace();
+            e.printStackTrace();
+            System.out.println("Missing property");
         }
 
         int[] packet = generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, k);

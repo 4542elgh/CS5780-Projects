@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Random;
 
 
 public class SimpleClient {
@@ -25,7 +26,6 @@ public class SimpleClient {
 
       String username = "mickey";
       String key = "xyz";
-
       // load the profile properties - contains user private key and server public key
       Properties profileProperties = new Properties();
       try (FileInputStream input = new FileInputStream(username + ".txt")) {
@@ -34,6 +34,7 @@ public class SimpleClient {
       } catch (IOException e) {
          e.printStackTrace();
       }
+      //String key = profileProperties.getProperty("k");
 
       // Get the public key from the server
       String[] serverPublicKey = profileProperties.getProperty("server.public_key").replaceAll("[{}]", "").split(",");
@@ -60,51 +61,82 @@ public class SimpleClient {
       // for(int z = 0; z < 1; z++) {
          clientSocket.getOutputStream().write((encryptedHandshake.get(z).toString() + '\n').getBytes());
       }
-      clientSocket.getOutputStream().flush();
+      // clientSocket.getOutputStream().flush();
 
+      //Generate the packet but first get the values from the txt file
+      int pattern = Integer.parseInt(profileProperties.getProperty("pattern"));
+      int ndatabytes = Integer.parseInt(profileProperties.getProperty("ndatabytes"));
+      int ncheckbytes = Integer.parseInt(profileProperties.getProperty("ncheckbytes"));
+      int K = Integer.parseInt(profileProperties.getProperty("k"));
+      // The method in the hash requires a random number to generate the key. Im confused on how
+      // you would send the same random number to the server or if you would use K
+      Random rand  = new Random();
 
-
-      //Client can communicate with the server
-      BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-      PrintWriter output  = new PrintWriter(clientSocket.getOutputStream(), true);
-      BufferedReader consoleInput = new BufferedReader(new InputStreamReader(System.in));
-      String userInput = "";
-
-
-      while((userInput = consoleInput.readLine()) != null) {
-         output.println(userInput);
-         System.out.println("Received from server: " + input.readLine());
-      }
-
-
-      /*  read data from keyboard until end of file
+      // read data from keyboard until end of file
       while ((c = System.in.read()) != -1) {
+
+         // Convert the message into an array of binary numbers (data bytes)
+         ArrayList<Integer> message = convertToArrayList(c);
+         // Create the packet, the one time key, and encode the packet
+         int[] packet = Hash.generatePacket(message, ndatabytes, ncheckbytes, pattern, K);
+         int[] oneTimeKey = Hash.generateOneTimeKey(packet.length, rand);
+         int[] encodedPacket = Hash.encodePacket(packet, oneTimeKey);
          // send it to server
 
-
+         // Since the return types are int[], I use a for loop to go through each position
+         // in the encodedPacket array and print out to the server that int. It will be a bunch of weird symbols.
+         for( int x = 0; x < encodedPacket.length; x++) {
+            clientSocket.getOutputStream().write(encodedPacket[x]);
+         }
 
          clientSocket.getOutputStream().write(c);
          // if carriage return, flush stream
          if ((char) c == '\n' || (char) c == '\r')
          clientSocket.getOutputStream().flush();
-         i++;
+         ++k;
        }
-       */
       clientSocket.getOutputStream().flush();
 
-      /* 
-      // read until end of file or same number of characters
-      // read from server
-      while ((c = s.getInputStream().read()) != -1) {
+      while((c = clientSocket.getInputStream().read()) != -1) {
          System.out.write(c);
-         if (++i == k)
-            break;
+         if(++i == k) break;
       }
-      */
       System.out.println();
       System.out.println("wrote " + i + " bytes");
       clientSocket.close();
    }
+
+   //Takes an into and returns an array list of its binary representation (Theres probably a better way to do this)
+   public ArrayList<Integer> convertToArrayList(int message) {
+      //Create a string with the message converted to a binary string
+      String binaryString = Integer.toBinaryString(message);
+
+      //Create the list that will be returned
+      ArrayList<Integer> list = new ArrayList<>();
+
+      // Turn the binary string into a char array
+      char[] list1 = binaryString.toCharArray();
+
+      //Loop through the char array
+      for(char c: list1) {
+         // Cast the char as an int and mod it by 8 to get the binary values
+          list.add((int) c % 8);
+      }
+      return list;
+   }
+
+   public static void print(int[] result){
+      for(int i = 0; i < result.length; i++) {
+          //Add padding
+          String temp = Integer.toBinaryString(result[i]);
+          for(int x = 0; x < 8 - temp.length(); x++) {
+              System.out.print("0");
+          }
+          System.out.print( Integer.toBinaryString(result[i]) + " ");
+      }
+      System.out.println();
+  }
+
 
    public static void main(String[] argv) throws Exception {
       if (argv.length != 2) {
