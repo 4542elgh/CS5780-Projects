@@ -13,15 +13,17 @@ public class Hash {
     public static void main(String[] args){
         Random rand = new Random();
         ArrayList<Integer> data_bytes = new ArrayList<>();
+         
         int ndatabytes = -1;
         int ncheckbytes = -1;
         int pattern = -1;
         int k = -1;
-//        ArrayList<Integer> data_bytes = new ArrayList<>(Arrays.asList(Integer.valueOf(101), Integer.valueOf(181)));
-//        int ndatabytes = 3;
-//        int ncheckbytes = 1;
-//        int pattern = 123;
-//        int k = 7;
+        
+        //ArrayList<Integer> data_bytes = new ArrayList<>(Arrays.asList(Integer.valueOf(101), Integer.valueOf(181)));
+        //int ndatabytes = 3;
+        //int ncheckbytes = 1;
+        //int pattern = 123;
+        //int k = 7;
 
         try{
             if(args[0] != null && args[1] != null && args[2] != null && args[3] != null && args[4] != null){
@@ -33,33 +35,34 @@ public class Hash {
                     System.exit(1);
                 }
                 data_bytes.clear();
+                //Use this to convert input message in Simple Client into data bytes
                 for(int i = 0; i < args[4].length(); i++){
                     data_bytes.add((int)args[4].charAt(i));
                 }
             }
         } catch (ArrayIndexOutOfBoundsException e){
-//            e.printStackTrace();
+            e.printStackTrace();
+            System.out.println("Missing property");
         }
 
         int[] packet = generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, k);
         System.out.print("Packet: ");
         print(packet);
-        System.out.println();
 
         int[] oneTimeKey = generateOneTimeKey(packet.length, rand);
         System.out.print("One Time Key: ");
         print(oneTimeKey);
-        System.out.println();
+
+        int[] checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
+        System.err.println("Checksum: " + checksum);
 
         int[] encodedPacket = encodePacket(packet, oneTimeKey);
         System.out.print("Encoded Packet: ");
         print(encodedPacket);
-        System.out.println();
 
         int[] decodedPacket = decodePacket(encodedPacket, oneTimeKey);
         System.out.print("Decoded Packet: ");
         print(decodedPacket);
-        System.out.println();
     }
 
     /**
@@ -73,21 +76,29 @@ public class Hash {
      * @return            An integer array representing the complete packet
      */
     public static int[] generatePacket(ArrayList<Integer> data_bytes, int ndatabytes, int ncheckbytes, int pattern, int k){
+        // System.out.println(data_bytes.size());
         // Use example data, get working operations first
         // This is the size of the packet
         int[] packet = new int[1 + ndatabytes + ncheckbytes];
         packet[0] = data_bytes.size();
 
+        int padding = ndatabytes - data_bytes.size();
         // Padding data_bytes to match ndatabytes
-        for(int i = 0; i < ndatabytes - data_bytes.size(); i++){
+        for(int i = 0; i < padding; i++){
             data_bytes.add(0);
         }
-
-        data_bytes.add(generateChecksum(data_bytes, pattern, k, ncheckbytes));
-
+        int[] checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
+        for(int b: checksum) {
+            // System.out.print(b + ", ");
+            data_bytes.add(b);
+        }
+        // System.out.println();
+        System.out.println(data_bytes);
+        // System.out.println("DataBytes:" + data_bytes.size());
         for(int i = 0; i < data_bytes.size(); i++){
             // From position 2 onward will be data_bytes with trailing 0 padding if necessary
             // Follow by checksumbytes
+            
             packet[1+i] = data_bytes.get(i);
         }
         return packet;
@@ -102,14 +113,18 @@ public class Hash {
      * @param ncheckbytes  Number of checksum bytes
      * @return             Checksum value
      */
-    public static int generateChecksum(ArrayList<Integer> data_bytes, int pattern, int k, int ncheckbytes){
+    public static int[] generateChecksum(ArrayList<Integer> data_bytes, int pattern, int k, int ncheckbytes){
         int checksum = 0;
         for(int i = 0; i < data_bytes.size(); i++){
             checksum += (data_bytes.get(i) & pattern);
         }
         checksum = checksum * k;
         checksum = checksum % (int) Math.pow(2, 8*ncheckbytes);
-        return checksum;
+        int[] result = new int[ncheckbytes];
+        for(int i = 0; i < ncheckbytes; i++){
+            result[i] = (checksum >> (8 * i)) & 0xFF;
+        }
+        return result;
     }
 
     /**
@@ -158,13 +173,19 @@ public class Hash {
     }
 
     /**
-     * Prints the contents converting to chars.
+     * Prints the contents of the packet into binary numbers in the 8 bit long format
      *
      * @param result The integer array to print
      */
     public static void print(int[] result){
         for(int i = 0; i < result.length; i++) {
-            System.out.print((char)result[i]);
+            //Add padding
+            String temp = Integer.toBinaryString(result[i]);
+            for(int x = 0; x < 8 - temp.length(); x++) {
+                System.out.print("0");
+            }
+            System.out.print( Integer.toBinaryString(result[i]) + " ");
         }
+        System.out.println();
     }
 }
