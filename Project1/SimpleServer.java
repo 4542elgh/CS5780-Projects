@@ -65,7 +65,7 @@ public class SimpleServer implements Runnable {
 
             // Decrypt the username
             String username = RSA.BigIntegerListToString(RSA.decryption(handshake.get(0), private_key));
-            System.out.println("username: " + username);
+            // System.out.println("username: " + username);
 
             // Verify the company
             RSA.KU userKU;
@@ -86,11 +86,14 @@ public class SimpleServer implements Runnable {
                socket.close();
                return;
             }
-            System.out.println("company: " + company);
+            // System.out.println("company: " + company);
 
             // Decrypt the key
-            String key = RSA.BigIntegerListToString(RSA.decryption(handshake.get(2), private_key));
-            System.out.println("key: " + key);
+            ArrayList<BigInteger> al_key = RSA.decryption(handshake.get(2), private_key);
+            int[] key = new int[al_key.size()];
+            for(int i = 0; i < al_key.size(); i++) {
+               key[i] = al_key.get(i).intValue();
+            }
 
 
             //Generate the packet but first get the values from the txt file
@@ -105,45 +108,70 @@ public class SimpleServer implements Runnable {
             int packetLength = 1 + ndatabytes + ncheckbytes;
             int[] packet = new int[packetLength];
             int index = 0;
+            // System.out.println("key: " + al_key);
+            String buff = "";
             // read the bytes from the socket
             // and convert the case
             while((c = socket.getInputStream().read()) != -1) {
                packet[index] = c;
-               index++;
-               if(index == packetLength) {
-                  int n = packet[0];
-                  ArrayList<Integer> data_bytes = new ArrayList<Integer>();
-                  for(int i = 1; i < n+1; i++) {
-                     data_bytes.add(packet[i]);
-                  }
-                  int[] checksum = Hash.generateChecksum(data_bytes, pattern, K, ncheckbytes);
-                  for(int z = 0; z < ncheckbytes; z++) {
-                     if(checksum[z] != packet[ndatabytes + z + 1]) {
-                        System.out.println("Checksum mismatch... closing connection...");
-                        socket.close();
-                        return;
-                     }
-                  }
-                  
-                  for(int i = 0; i < data_bytes.size(); i++) {
-                     if (data_bytes.get(i) >= 97 && data_bytes.get(i) <= 122) {
-                        data_bytes.set(i, data_bytes.get(i) - 32);
-                     } 
-                     else if (data_bytes.get(i) >= 65 && data_bytes.get(i) <=90) {
-                        data_bytes.set(i, data_bytes.get(i) + 32);
-                     }
-                  }
-                  packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
-                  System.out.println(packet.length);
-                  for(int x = 0; x < packet.length; x++) {
-                     socket.getOutputStream().write(packet[x]);
-                  }
-                  socket.getOutputStream().flush();
-                  index = 0;
-                  System.out.println("HERE");
+               if(++index != packetLength) {
+                  continue;
                }
+               // System.out.println(packet);
+               // for(int i = 0; i < packet.length; i++) {
+               //    System.out.print(packet[i] + " ");
+               // }
+               packet = Hash.decodePacket(packet, key);
+               int n = packet[0];
+               ArrayList<Integer> data_bytes = new ArrayList<Integer>();
+               for(int i = 1; i < n+1; i++) {
+                  data_bytes.add(packet[i]);
+               }
+               // System.out.println(data_bytes);
+               int[] checksum = Hash.generateChecksum(data_bytes, pattern, K, ncheckbytes);
+               for(int z = 0; z < ncheckbytes; z++) {
+                  if(checksum[z] != packet[ndatabytes + z + 1]) {
+                     System.out.println("Checksum mismatch... closing connection...");
+                     socket.close();
+                     return;
+                  }
+               }
+               
+               for(int i = 0; i < data_bytes.size(); i++) {
+                  if (data_bytes.get(i) >= 97 && data_bytes.get(i) <= 122) {
+                     buff += (char)(data_bytes.get(i) - 32);
+                  } 
+                  else if (data_bytes.get(i) >= 65 && data_bytes.get(i) <=90) {
+                     buff += (char)(data_bytes.get(i) + 32);
+                  } else {
+                     buff += (char)data_bytes.get(i).intValue();
+                  }
+               }
+               index = 0;
+               // packet= new int[packetLength];
             }
 
+            // START
+
+            index = 0;
+            byte[] bytes = buff.getBytes();
+            while(index < buff.length()) {
+               ArrayList<Integer> data_bytes = new ArrayList<>();
+               int upper_bound = Math.min(index + ndatabytes, bytes.length);
+               for(int x = index; x < upper_bound; x++) {
+                  data_bytes.add((int) bytes[x]);
+               }
+               packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
+               packet = Hash.encodePacket(packet, key);
+               for(int x = 0; x < packet.length; x++) {
+                  socket.getOutputStream().write(packet[x]);
+               }
+               socket.getOutputStream().flush();
+               index += ndatabytes;
+            }
+            // socket.shutdownOutput();
+
+            
 
             this.socket.getOutputStream().flush();
             this.socket.close();
