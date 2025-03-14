@@ -37,22 +37,18 @@ public class SimpleClient {
       int pattern = Integer.parseInt(profileProperties.getProperty("pattern"));
       
       int ndatabytes = Integer.parseInt(profileProperties.getProperty("ndatabytes"));
-      System.out.println("nDataBytes: " + ndatabytes);
+      // System.out.println(ndatabytes);
       int ncheckbytes = Integer.parseInt(profileProperties.getProperty("ncheckbytes"));
 
-      System.out.println("One Time Key:");
       int K = Integer.parseInt(profileProperties.getProperty("k"));
-
-      //Generate the one time key with the size of the packet length
-      int[] key = Hash.generateOneTimeKey(1 + ndatabytes + ncheckbytes, new Random());
+      int[] key = Hash.generateOneTimeKey(ndatabytes + ncheckbytes + 1, new Random());
       ArrayList<BigInteger> keyArrayList = new ArrayList<>();
       for (int x = 0; x < key.length; x++) {
-         System.out.print((char)key[x]);
+         // System.out.print((char)key[x]);
          keyArrayList.add(BigInteger.valueOf(key[x]));
       }
-      System.out.println();
-      System.out.println(keyArrayList.size());
-      System.out.println();
+      
+      // System.out.println("Key: " + keyArrayList);
       //String key = profileProperties.getProperty("k");
 
       // Get the public key from the server
@@ -83,63 +79,46 @@ public class SimpleClient {
       // clientSocket.getOutputStream().flush();
 
 
-      System.out.print("User console input: ");
       String buff = "";
       // read data from keyboard until end of file
       while ((c = System.in.read()) != -1) {
          i += 1;
-         // if carriage return, flush stream
-         if ((char) c == '\n' || (char) c == '\r') {
-            buff += c;
-            // System.out.println((int)c);
-            int index = 0;
-            byte[] bytes = buff.getBytes();
-            // System.out.println(bytes.length);
-            while(index < buff.length()) {
-               ArrayList<Integer> data_bytes = new ArrayList<>();
-               int upper_bound = Math.min(index + ndatabytes, bytes.length);
-               for(int x = index; x < upper_bound; x++) {
-                  data_bytes.add((int) bytes[x]);
-               }
-
-               //Generate the packet
-               System.out.println("Packet generated");
-               int[] packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
-               System.out.println("Packet length: " + packet.length);
-
-               //Here we need to encode the packet, getting an out of bounds error
-               
-               int[] encodedPacket = Hash.encodePacket(packet, key);
-               System.out.println("Encoded packet : " + encodedPacket.toString());
-
-               for(int x = 0; x < encodedPacket.length; x++) {
-                  clientSocket.getOutputStream().write(encodedPacket[x]);
-               }
-               clientSocket.getOutputStream().flush();
-
-
-               System.out.println("HERE is the Server Response");
-               index += ndatabytes;
-               int received = 0;
-               while((c = clientSocket.getInputStream().read()) != -1) { 
-                  packet[received] = c;
-                  received++;
-                  if (received == packet.length) {
-                     break;
-                  }
-               }
-               for(int x = 1; x < packet.length - ncheckbytes; x++) {
-                  System.out.print((char)packet[x]);
-               }
-            }
-            buff = "";
-            break;
-         }
          buff += (char) c;
+      }
 
-         // ++k;
-       }
-      clientSocket.getOutputStream().flush();
+      int index = 0;
+      byte[] bytes = buff.getBytes();
+      while(index < buff.length()) {
+         ArrayList<Integer> data_bytes = new ArrayList<>();
+         int upper_bound = Math.min(index + ndatabytes, bytes.length);
+         for(int x = index; x < upper_bound; x++) {
+            data_bytes.add((int) bytes[x]);
+         }
+         // System.out.println(data_bytes);
+         int[] packet = Hash.generatePacket(data_bytes, ndatabytes, ncheckbytes, pattern, K);
+         packet = Hash.encodePacket(packet, key);
+         for(int x = 0; x < packet.length; x++) {
+            clientSocket.getOutputStream().write(packet[x]);
+         }
+         clientSocket.getOutputStream().flush();
+         index += ndatabytes;
+      }
+      clientSocket.shutdownOutput();
+      buff = "";
+
+      int received = 0;
+      int[] packet = new int[ndatabytes + ncheckbytes + 1];
+      while((c = clientSocket.getInputStream().read()) != -1) { 
+         packet[received] = c;
+         if (++received == packet.length) {
+            packet = Hash.decodePacket(packet, key);
+            for(int x = 1; x < packet.length - ncheckbytes; x++) {
+               buff += (char)packet[x];
+            }
+            received = 0;
+         }
+      }
+      System.out.println(buff);
       System.out.println();
       System.out.println("wrote " + i + " bytes");
       clientSocket.close();
@@ -155,6 +134,7 @@ public class SimpleClient {
 
       // Turn the binary string into a char array
       char[] list1 = binaryString.toCharArray();
+
       //Loop through the char array
       for(char c: list1) {
          // Cast the char as an int and mod it by 8 to get the binary values

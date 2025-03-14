@@ -93,7 +93,6 @@ public class Hash {
             data_bytes.add(b);
         }
         // System.out.println();
-        System.out.println(data_bytes);
         // System.out.println("DataBytes:" + data_bytes.size());
         for(int i = 0; i < data_bytes.size(); i++){
             // From position 2 onward will be data_bytes with trailing 0 padding if necessary
@@ -101,6 +100,11 @@ public class Hash {
             
             packet[1+i] = data_bytes.get(i);
         }
+        // System.out.print("From HASH: Packet: ");
+        // for(int i = 0; i < packet.length; i++) {
+        //     System.out.print(packet[i] + " ");
+        // }
+        // System.out.println();
         return packet;
     }
 
