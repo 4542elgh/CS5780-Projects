@@ -2,6 +2,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Random;
 
+import javax.sound.midi.SysexMessage;
+
 // RUN: java -Dprime_size=500 .\RSA.java -gen "hello world"
 public class RSA {
     private static final Random rnd = new Random(); // Prime seed
@@ -63,6 +65,20 @@ public class RSA {
      * @param args Command line arguments: -gen [user input payload string]
      */
     public static void main(String[] args) {
+
+        if(args[0].equals("-help")) {
+            System.out.println();
+            System.out.println("Welcome to the help guide for RSA");
+            System.out.println("To use the RSA algorithm, input the command as shown below:");
+            System.out.println("-----------------------------------");
+            System.out.println("java -Dprime_size=<inputSize> .\\RSA.java -gen <text>");
+            System.out.println("-----------------------------------");
+            System.out.println("This will generate private (KR) and public (KU) keys");
+            System.out.println("based on the size you inputted and test them on <text>");
+            System.out.println();
+        }
+
+
         String payload = args[1]; // User input payload
         int k = Integer.parseInt(System.getProperty("prime_size"));
 
