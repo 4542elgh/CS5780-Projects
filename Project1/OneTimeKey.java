@@ -11,6 +11,11 @@ public class OneTimeKey {
     public static void main(String[] args){
         // Key length must be a complete division of text length. So text.length % key.length = 0
         if (args[1].length() % args[0].length() != 0){
+            System.out.println("The arguments are not compatible.");
+            System.out.println("-----------------------------------");
+            System.out.println("java .\\OneTimeKey.java <key> <text>");
+            System.out.println("-----------------------------------");
+            System.out.println("The text size must be divisible by the key size");
             System.exit(1);
         }
 
@@ -33,7 +38,7 @@ public class OneTimeKey {
         ArrayList<Integer> encoded = encode(keys, textArr);
         print(encoded);
         System.out.println();
-        System.out.print("decoded to ");
+        System.out.print("ddecoded to ");
         print(decode(keys, encoded));
     }
 

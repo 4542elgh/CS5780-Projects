@@ -5,7 +5,7 @@ import java.util.Random;
 // RUN: java -Dprime_size=500 .\RSA.java -gen "hello world"
 public class RSA {
     private static final Random rnd = new Random(); // Prime seed
-    private static int k = 500; // This should be a user input, determine prime number length 2^k
+    //private static int k = 500; // This should be a user input, determine prime number length 2^k
 
     /**
      * Container class for RSA key components.
@@ -63,6 +63,20 @@ public class RSA {
      * @param args Command line arguments: -gen [user input payload string]
      */
     public static void main(String[] args) {
+
+        if(args[0].equals("-help")) {
+            System.out.println();
+            System.out.println("Welcome to the help guide for RSA");
+            System.out.println("To use the RSA algorithm, input the command as shown below:");
+            System.out.println("-----------------------------------");
+            System.out.println("java -Dprime_size=<inputSize> .\\RSA.java -gen <text>");
+            System.out.println("-----------------------------------");
+            System.out.println("This will generate private (KR) and public (KU) keys");
+            System.out.println("based on the size you inputted and test them on <text>");
+            System.out.println();
+        }
+
+
         String payload = args[1]; // User input payload
         int k = Integer.parseInt(System.getProperty("prime_size"));
 
@@ -99,7 +113,7 @@ public class RSA {
         BigInteger q = BigInteger.probablePrime(k,rnd);
         BigInteger n = p.multiply(q);
         BigInteger phi = p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE));
-        BigInteger e = relativePrime(phi); // e should be relative prime to Phi(n)
+        BigInteger e = relativePrime(k, phi); // e should be relative prime to Phi(n)
         BigInteger d = e.modInverse(phi); // Inverse of e mod Phi(n)
 
         System.out.println("KR={" + d + "," + n + "}");
@@ -113,7 +127,7 @@ public class RSA {
      * @param phi phi value of (p-1) * (q-1) aka. always even
      * @return A BigInteger that is relatively prime to phi
      */
-    public static BigInteger relativePrime(BigInteger phi){
+    public static BigInteger relativePrime(int k ,BigInteger phi){
         while(true){
             BigInteger prime = BigInteger.probablePrime(k, rnd);
             if (prime.gcd(phi).equals(BigInteger.ONE)){
