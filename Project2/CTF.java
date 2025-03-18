@@ -1,5 +1,5 @@
 // - CTF checks the validation number against a list of numbers received from the CLA.
-// - If the validation number is there, the CTF crosses it out (to prevent someone from voting twice).
+    // - If the validation number is there, the CTF crosses it out (to prevent someone from voting twice).
 // - The CTF adds the identification number to the list of people who voted for a particular candidate and adds one to the tally.
 // - After the election ends, the CTF publishes the outcome.
 
@@ -8,21 +8,22 @@ public class CTF {
     public static class Candidate{
         public String name;
         public int count = 0;
+        public ArrayList<String> voterIds = new ArrayList<>();
     }
 
-    public static ArrayList<String> CTFValidationNumber = new ArrayList<>();
+    public static ArrayList<String> CLAValidationNumber = new ArrayList<>();
     public static ArrayList<Candidate> candidatesList = new ArrayList<>();
 
     public static void receiveValidationfromCLA(String validationNumber){
-        CTFValidationNumber.add(validationNumber);
+        CLAValidationNumber.add(validationNumber);
     }
 
     public static boolean processVote(String candidate, String validationNumber){
         boolean foundValidation = false;
-        for(int i = 0; i < CTFValidationNumber.size(); i++){
-             if (CTFValidationNumber.get(i).equals(validationNumber)){
+        for(int i = 0; i < CLAValidationNumber.size(); i++){
+             if (CLAValidationNumber.get(i).equals(validationNumber)){
                  foundValidation = true;
-                 CTFValidationNumber.remove(i);
+                 CLAValidationNumber.remove(i);
                  break;
             }
         }
@@ -43,7 +44,7 @@ public class CTF {
                 return false;
             }
         } else {
-            // Did not find user validation number, its either not transfered from CLA, or the user is trying to cast vote twice!
+            // Did not find user validation number, its either not transferred from CLA, or the user is trying to cast vote twice!
             return false;
         }
     }
