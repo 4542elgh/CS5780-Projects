@@ -63,7 +63,7 @@ public class SimpleServer implements Runnable {
                }
             }
 
-            // Decrypt the username
+            // Decrypt the username with server private key
             String username = RSA.BigIntegerListToString(RSA.decryption(handshake.get(0), private_key));
             // System.out.println("username: " + username);
 
@@ -96,7 +96,7 @@ public class SimpleServer implements Runnable {
             }
 
 
-            //Generate the packet but first get the values from the txt file
+            //Get the values from the txt file
             int pattern = Integer.parseInt(profileProperties.getProperty(username + ".pattern"));
             int ndatabytes = Integer.parseInt(profileProperties.getProperty(username + ".ndatabytes"));
             int ncheckbytes = Integer.parseInt(profileProperties.getProperty(username + ".ncheckbytes"));

@@ -54,7 +54,8 @@ public class Hash {
         print(oneTimeKey);
 
         int[] checksum = generateChecksum(data_bytes, pattern, k, ncheckbytes);
-        System.err.println("Checksum: " + checksum);
+        System.out.print("Checksum: ");
+        print(checksum);
 
         int[] encodedPacket = encodePacket(packet, oneTimeKey);
         System.out.print("Encoded Packet: ");
