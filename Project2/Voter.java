@@ -1,30 +1,43 @@
+import java.io.BufferedOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 
 public class Voter {
-    private Socket CLAClientSocket;
-    private Socket CTFClientSocket;
+    private Socket clientSocket;
 
-//    public CLAClient(String host, int port) throws Exception {
-//        // open a connection to the server
-//        CLAClientSocket = new Socket(host, port);
-//    }
-//
-//    public CTFClient(String host, int port) throws Exception {
-//        // open a connection to the server
-//        CTFClientSocket = new Socket(host, port);
-//    }
-
-    public Voter(String CLAHost, int CLAPort, String CTFHost, int CTFPort) throws Exception {
-        CLAClientSocket = new Socket(CLAHost, CLAPort);
-        CTFClientSocket = new Socket(CTFHost, CTFPort);
+    // Create new client socket instance
+    public Voter(String host, int port) throws Exception {
+        clientSocket = new Socket(host, port);
     }
 
-    public String getVerificationNumber() throws Exception {
+    public void run() throws Exception {
+        // Getting validation number
+        OutputStream out = clientSocket.getOutputStream();
+        InputStream in = clientSocket.getInputStream();
 
-    }
+        out.write("mickey\n".getBytes());
+        out.flush();
 
-    public boolean castVote() throws Exception {
+        StringBuilder validationNumber = new StringBuilder();
 
+        try{
+            int nextByte;
+            while((nextByte = in.read()) != -1) {
+                if (nextByte == '\n'){
+                    break;
+                }
+                validationNumber.append((char)nextByte);
+            }
+            if (validationNumber.toString().equals("-1")){
+                System.out.println("Invalid verification code, did you try to vote twice?");
+            } else {
+                System.out.println("Verification code: " + validationNumber);
+            }
+            clientSocket.close();
+        } catch (Exception e){
+            System.out.println("CLA server return error: " + e);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -36,10 +49,9 @@ public class Voter {
         String CLAHost = args[0];
         int CLAPort = Integer.parseInt(args[1]);
 
-        String CTFHost = args[2];
-        int CTFPort = Integer.parseInt(args[3]);
+//        String CTFHost = args[2];
+//        int CTFPort = Integer.parseInt(args[3]);
 
-        new Socket(CLAHost, CLAPort).getVerificationNumber();
-        new CTFClient(CTFHost, CTFPort).castVote();
+        new Voter(CLAHost, CLAPort).run();
     }
 }
