@@ -3,6 +3,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+// Run with java .\Voter.java 127.0.0.1 1220 127.0.0.1 1000
+// Where 127.0.0.1 1220 is your CLA host and port
+// Where 127.0.0.1 1000 is your CTF host and port
 public class Voter {
     private Socket clientSocket;
 
@@ -21,6 +24,7 @@ public class Voter {
 
         StringBuilder validationNumber = new StringBuilder();
 
+        // Reading validation from CLA server
         try{
             int nextByte;
             while((nextByte = in.read()) != -1) {
@@ -49,8 +53,8 @@ public class Voter {
         String CLAHost = args[0];
         int CLAPort = Integer.parseInt(args[1]);
 
-//        String CTFHost = args[2];
-//        int CTFPort = Integer.parseInt(args[3]);
+        String CTFHost = args[2];
+        int CTFPort = Integer.parseInt(args[3]);
 
         new Voter(CLAHost, CLAPort).run();
     }

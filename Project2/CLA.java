@@ -16,8 +16,9 @@ import java.util.Random;
     // - Evan: Remember CTF does not know who the voter is, just entry on "this validationNumber personnel" voted for this person
 // - After a voter gets the validation number from CLA, the voter sends his/her vote and the validation number to CTF.
 
+// Run with java .\CLA.java 1220
 public class CLA implements Runnable {
-    public static ArrayList<Recipientvalidation> recipientValidation = new ArrayList<>();
+    public static ArrayList<VoterValidation> voterList = new ArrayList<>();
     private ServerSocket serverSocket;
 
     public CLA(int p) throws Exception {
@@ -40,25 +41,16 @@ public class CLA implements Runnable {
                 StringBuilder voter = new StringBuilder();
 
                 while((nextByte = in.read()) != -1) {
+                    // Line feed will be indicator the message is finished
                     if (nextByte == '\n') {
                         break;
                     }
                     voter.append((char)nextByte);
                 }
-//
-//                System.out.println("Voter name is " + voter);
-//
+
                 int validationNumber = getValidationNumber(voter.toString());
-
-                if (validationNumber == -1){
-                    System.out.println("Voter is already registered");
-                    out.write("-1\n".getBytes());
-                } else {
-                    System.out.println("Return " + voter + " a validation number: " + validationNumber);
-                    out.write((validationNumber + "\n").getBytes());
-                }
-                out.flush();
-
+                sendValidationToVoter(out, voter.toString(), validationNumber);
+//                sendValidationToCTF(validationNumber);
             } catch (SocketException e) {
                 System.out.println("Socket Exception: " + e);
             } catch (IOException e){
@@ -69,46 +61,70 @@ public class CLA implements Runnable {
         }
     }
 
-    public static class Recipientvalidation {
+    // Voter CLA model
+    public static class VoterValidation {
         public String voterId;
         public int validationNumber;
 
-        public Recipientvalidation(String voterId, int validationNumber){
+        public VoterValidation(String voterId, int validationNumber){
             this.voterId = voterId;
             this.validationNumber = validationNumber;
         }
     }
 
     public static int getValidationNumber(String voterId){
-        // Trigger a test case where voterExist is true
-        // recipientValidation.add(new Recipientvalidation("tester1", "test1123"));
+        Random rand = new Random();
+        int validationNumber;
+        while (true){
+            // Using Random here for simplicity, UUID will guarantee uniqueness without needing to check
+            validationNumber = rand.nextInt(9999);
+            boolean validationNumberCollided = false;
+            // Check if voter already in list and check new random collided
+            for(int i = 0; i < voterList.size(); i++){
+                if (voterList.get(i).voterId.equals(voterId)){
+                    return -1;
+                }
+                if (voterList.get(i).validationNumber == validationNumber){
+                    validationNumberCollided = true;
+                }
+            }
 
-        // Need to check if voter id is in existing list first
-        for(int i = 0; i < recipientValidation.size(); i++){
-            if (recipientValidation.get(i).voterId.equals(voterId)){
-                return -1;
+            if (!validationNumberCollided){
+                break;
             }
         }
-
-        Random rand = new Random();
-        int validationNumber = rand.nextInt(9999);
-        recipientValidation.add(new Recipientvalidation(voterId, validationNumber));
-        sendValidationToCTF(validationNumber);
+        voterList.add(new VoterValidation(voterId, validationNumber));
         return validationNumber;
-    }
-
-    public static boolean castVote(String voteFor, int validationNumber){
-        return true;
     }
 
     public static void sendValidationToCTF(int validationNumber){
 
     }
 
+    public static void sendValidationToVoter(OutputStream out, String voter, int validationNumber){
+        try{
+            if (validationNumber == -1){
+                System.out.println("Voter is already registered");
+                out.write("-1\n".getBytes());
+            } else {
+                System.out.println("Return " + voter + " a validation number: " + validationNumber);
+                out.write((validationNumber + "\n").getBytes());
+            }
+            // Make sure to flush your message immediately after finish writing
+            out.flush();
+        } catch (SocketException e) {
+            System.out.println("Socket Exception: " + e);
+        } catch (IOException e){
+            System.out.println("IO Exception: " + e);
+        } finally {
+            System.out.println("Disconnecting...");
+        }
+    }
+
     public void run() {
         while(true) {
             try {
-                // accept a connection and run handler in a new thread
+                // Accept a connection and run handler in a new thread
                 new Thread(new RequestHandler(serverSocket.accept())).run();
             } catch(Exception e) {
                 System.out.println("SERVER: " + e);
@@ -117,17 +133,12 @@ public class CLA implements Runnable {
     }
 
     public static void main(String[] args) throws Exception {
-//        int validationNumber = getValidationNumber("tester1");
-//        if (validationNumber != -1){
-//            // Cast a vote
-//            castVote("candidate1", validationNumber);
-//        }
         if (args.length != 1) {
             System.out.println("java CLA <port>");
             System.exit(1);
         }
         System.out.println("CLA socket listening on port: " + args[0]);
-        // Create and start socket server connection
+        // Create and start socket server connection, CLA.run() -> RequestHandler(port).run()
         new CLA(Integer.parseInt(args[0])).run();
     }
 }
