@@ -16,20 +16,43 @@ import java.util.Random;
     // - Evan: Remember CTF does not know who the voter is, just entry on "this validationNumber personnel" voted for this person
 // - After a voter gets the validation number from CLA, the voter sends his/her vote and the validation number to CTF.
 
+// Voter CLA model
+
 // Run with java .\CLA.java 1220
 public class CLA implements Runnable {
+    public static class VoterValidation {
+        public String voterId;
+        public int validationNumber;
+
+        public VoterValidation(String voterId, int validationNumber){
+            this.voterId = voterId;
+            this.validationNumber = validationNumber;
+        }
+    }
+
     public static ArrayList<VoterValidation> voterList = new ArrayList<>();
     private ServerSocket serverSocket;
 
-    public CLA(int p) throws Exception {
-        serverSocket = new ServerSocket(p);
+    private String CTFHost;
+    private int CTFPort;
+
+    // CLA should be acting as a Server for Voter
+    // CLA should be acting as a Client to send validation to CTF
+    public CLA(int CLAPort, String CTFHost, int CTFPort) throws Exception {
+        serverSocket = new ServerSocket(CLAPort);
+        this.CTFHost = CTFHost;
+        this.CTFPort = CTFPort;
     }
 
     public class RequestHandler implements Runnable {
         private Socket socket;
+        private String CTFHost;
+        private int CTFPort;
 
-        private RequestHandler(Socket x){
+        private RequestHandler(Socket x, String CTFHost, int CTFPort){
             socket = x;
+            this.CTFHost = CTFHost;
+            this.CTFPort = CTFPort;
         }
 
         public void run() {
@@ -50,25 +73,14 @@ public class CLA implements Runnable {
 
                 int validationNumber = getValidationNumber(voter.toString());
                 sendValidationToVoter(out, voter.toString(), validationNumber);
-//                sendValidationToCTF(validationNumber);
+                new CTFClient(this.CTFHost, this.CTFPort, validationNumber).run();
             } catch (SocketException e) {
-                System.out.println("Socket Exception: " + e);
+//                System.out.println("Socket Exception: " + e);
             } catch (IOException e){
                 System.out.println("IO Exception: " + e);
-            } finally {
-                System.out.println("Disconnecting...");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        }
-    }
-
-    // Voter CLA model
-    public static class VoterValidation {
-        public String voterId;
-        public int validationNumber;
-
-        public VoterValidation(String voterId, int validationNumber){
-            this.voterId = voterId;
-            this.validationNumber = validationNumber;
         }
     }
 
@@ -97,10 +109,6 @@ public class CLA implements Runnable {
         return validationNumber;
     }
 
-    public static void sendValidationToCTF(int validationNumber){
-
-    }
-
     public static void sendValidationToVoter(OutputStream out, String voter, int validationNumber){
         try{
             if (validationNumber == -1){
@@ -116,8 +124,41 @@ public class CLA implements Runnable {
             System.out.println("Socket Exception: " + e);
         } catch (IOException e){
             System.out.println("IO Exception: " + e);
-        } finally {
-            System.out.println("Disconnecting...");
+        }
+    }
+
+    public class CTFClient {
+        private Socket CTFClientSocket;
+        private int validationNumber = -1;
+
+        public CTFClient(String host, int port, int validationNumber) throws Exception {
+            CTFClientSocket = new Socket(host, port);
+            this.validationNumber = validationNumber;
+        }
+
+        public void run() throws Exception {
+            // Register validation number to CTF
+            OutputStream out = CTFClientSocket.getOutputStream();
+            InputStream in = CTFClientSocket.getInputStream();
+
+            out.write(("CLA:" + this.validationNumber + "\n").getBytes());
+            out.flush();
+
+            // Reading validation from CLA server
+            try{
+                int nextByte;
+                StringBuilder responseMsg = new StringBuilder();
+                while((nextByte = in.read()) != -1) {
+                    if (nextByte == '\n'){
+                        break;
+                    }
+                    responseMsg.append((char)nextByte);
+                }
+                System.out.println(responseMsg);
+                out.close();
+            } catch (Exception e){
+                System.out.println("CTF server return error: " + e);
+            }
         }
     }
 
@@ -125,7 +166,7 @@ public class CLA implements Runnable {
         while(true) {
             try {
                 // Accept a connection and run handler in a new thread
-                new Thread(new RequestHandler(serverSocket.accept())).run();
+                new Thread(new RequestHandler(serverSocket.accept(), this.CTFHost, this.CTFPort)).run();
             } catch(Exception e) {
                 System.out.println("SERVER: " + e);
             }
@@ -133,13 +174,17 @@ public class CLA implements Runnable {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 1) {
-            System.out.println("java CLA <port>");
+        if (args.length != 3) {
+            System.out.println("java CLA <port> <CTF_host> <CTF_port>");
             System.exit(1);
         }
         System.out.println("CLA socket listening on port: " + args[0]);
         // Create and start socket server connection, CLA.run() -> RequestHandler(port).run()
-        new CLA(Integer.parseInt(args[0])).run();
+        int CLAPort = Integer.parseInt(args[0]);
+
+        String CTFHost = args[1];
+        int CTFPort = Integer.parseInt(args[2]);
+
+        new CLA(CLAPort, CTFHost, CTFPort).run();
     }
 }
-
