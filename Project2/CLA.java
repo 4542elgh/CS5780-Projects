@@ -9,11 +9,11 @@ import java.util.Random;
 
 // - Each voter will send a message to the CLA asking for a validation number, and CLA will return a random validation number to the user.
 // - The CLA retains a list of validation numbers as well as a list of validation numbers' recipients to prevent a voter from voting twice.
-    // - Evan: CLA does not purge this list
-    // - Evan: Remember CLA does not know the voter voted for who, that is CTF job
+// - Evan: CLA does not purge this list
+// - Evan: Remember CLA does not know the voter voted for who, that is CTF job
 // - Then, the CLA sends the same validation number to the CTF.
-    // - Evan: Retain "recipient name" information to CLA itself.
-    // - Evan: Remember CTF does not know who the voter is, just entry on "this validationNumber personnel" voted for this person
+// - Evan: Retain "recipient name" information to CLA itself.
+// - Evan: Remember CTF does not know who the voter is, just entry on "this validationNumber personnel" voted for this person
 // - After a voter gets the validation number from CLA, the voter sends his/her vote and the validation number to CTF.
 
 // Voter CLA model
