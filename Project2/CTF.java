@@ -1,15 +1,21 @@
 // - CTF checks the validation number against a list of numbers received from the CLA.
-    // - If the validation number is there, the CTF crosses it out (to prevent someone from voting twice).
+// - If the validation number is there, the CTF crosses it out (to prevent someone from voting twice).
 // - The CTF adds the identification number to the list of people who voted for a particular candidate and adds one to the tally.
 // - After the election ends, the CTF publishes the outcome.
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 public class CTF {
     public static class Candidate {
         public String name;
         public ArrayList<String> validationNumbers = new ArrayList<>();
 
-        public Candidate(name){
+        public Candidate(String name){
             this.name = name;
         }
     }
@@ -18,14 +24,14 @@ public class CTF {
     public static ArrayList<Candidate> candidatesList = new ArrayList<>();
 
     public CTF(int p) throws Exception {
-        serverSocket = new ServerSocket(p)
+        ServerSocket serverSocket = new ServerSocket(p);
     }
 
     public class RequestHandler implements Runnable {
         private Socket socket;
 
         private RequestHandler(Socket x){
-            socket = x
+            socket = x;
         }
 
         public void run() {
@@ -114,22 +120,22 @@ public class CTF {
             boolean candidateFound = false;
             for(int i = 0; i < candidatesList.size(); i++){
                 if(candidatesList.get(i).name.equals(candidate)){
-                    candidatesList.get(i).validationNumbers.push(validationNumber)
+                    candidatesList.get(i).validationNumbers.push(validationNumber);
                     candidateFound = true;
                 }
             }
 
             if (candidateFound){
-                System.out.println("Validation number " + validationNumber + " casted to candidate successfully.")
+                System.out.println("Validation number " + validationNumber + " casted to candidate successfully.");
                 return 1;
             } else {
                 // Did not find candidate
-                System.out.println("Validation number " + validationNumber + " is valid but cannot find candidate!")
+                System.out.println("Validation number " + validationNumber + " is valid but cannot find candidate!");
                 return 0;
             }
         } else {
             // Did not find user validation number, its either not transferred from CLA, or the user is trying to cast vote twice!
-            System.out.println("Validation number " + validationNumber + " is invalid. This could be because user voted or CLA did not transfer this validation number to CTF !")
+            System.out.println("Validation number " + validationNumber + " is invalid. This could be because user voted or CLA did not transfer this validation number to CTF !");
             return -1;
         }
     }
@@ -140,10 +146,10 @@ public class CTF {
             System.exit(1);
         }
 
-        candidatesList.add(new Candidate("John"))
-        candidatesList.add(new Candidate("David"))
-        candidatesList.add(new Candidate("Elena"))
-        candidatesList.add(new Candidate("Stephanie"))
+        candidatesList.add(new Candidate("John"));
+        candidatesList.add(new Candidate("David"));
+        candidatesList.add(new Candidate("Elena"));
+        candidatesList.add(new Candidate("Stephanie"));
         printCandidates();
 
         System.out.println("CTF socket listening on port: " + args[0]);
@@ -152,19 +158,20 @@ public class CTF {
     }
 
     public static void printCandidates(){
-        System.out.println("============================================================")
+        System.out.println("============================================================");
         for(int i = 0; i<candidatesList.size(); i++){
             System.out.println("Candidate: " + candidatesList.get[i].name + " votes: " + candidatesList.get[i].validationNumbers.size().toString());
         }
-        System.out.println("============================================================")
+        System.out.println("============================================================");
     }
 
     public static void printCLAValidationNumber(){
-        System.out.println("============================================================")
+        System.out.println("============================================================");
         System.out.println("Validation Numbers:");
         for(int i = 0; i<CLAValidationNumber.size(); i++){
             System.out.println("- " + CLAValidationNumber.get[i]);
         }
-        System.out.println("============================================================")
+        System.out.println("============================================================");
     }
+}
 }
