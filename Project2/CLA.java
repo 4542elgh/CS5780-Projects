@@ -92,8 +92,7 @@ public class CLA implements Runnable {
                     socket.close();
                     return;
                 }
-                System.out.println(profileProperties.getProperty(voter + ".password"));
-                System.out.println(password);
+
                 if (!profileProperties.getProperty(voter + ".password").equals(password)) {
                     System.out.println("Voter password mismatch");
                     out.write("-1\n".getBytes());
@@ -104,7 +103,8 @@ public class CLA implements Runnable {
 
                 System.out.println("Voter: " + voter + " Password: " + password);
                 int validationNumber = getValidationNumber(voter);
-                sendValidationToVoter(out, voter, validationNumber);
+                RSA.KU voterKU = new RSA.KU(new BigInteger(profileProperties.getProperty(voter + ".public_key").split(",")[0]), new BigInteger(profileProperties.getProperty(voter + ".public_key").split(",")[1]));
+                sendValidationToVoter(out, voter, voterKU, validationNumber);
                 new CTFClient(this.CTFHost, this.CTFPort, validationNumber).run();
             } catch (SocketException e) {
 //                System.out.println("Socket Exception: " + e);
@@ -141,14 +141,15 @@ public class CLA implements Runnable {
         return validationNumber;
     }
 
-    public static void sendValidationToVoter(OutputStream out, String voter, int validationNumber){
+    public static void sendValidationToVoter(OutputStream out, String voter, RSA.KU voterKU, int validationNumber){
         try{
             if (validationNumber == -1){
                 System.out.println("Voter is already registered");
                 out.write("-1\n".getBytes());
             } else {
                 System.out.println("Return " + voter + " a validation number: " + validationNumber);
-                out.write((validationNumber + "\n").getBytes());
+                out.write(RSA.encrypt("" + validationNumber, voterKU).getBytes());
+                out.write("\n".getBytes());
             }
             // Make sure to flush your message immediately after finish writing
             out.flush();
@@ -156,6 +157,8 @@ public class CLA implements Runnable {
             System.out.println("Socket Exception: " + e);
         } catch (IOException e){
             System.out.println("IO Exception: " + e);
+        } catch (Exception e) {
+            System.out.println("MISC EXCEPTION IN SENDING VALIDATION TO VOTER" + e);
         }
     }
 
@@ -172,7 +175,7 @@ public class CLA implements Runnable {
             // Register validation number to CTF
             OutputStream out = CTFClientSocket.getOutputStream();
             InputStream in = CTFClientSocket.getInputStream();
-
+            RSA.KU ctfKU = new RSA.KU(new BigInteger("2626397133379119473724051008683004030359875684611482215626489792880260882977831498475603342203258535446137757378503683648443659636668531934934174001743"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
             out.write(("CLA:" + this.validationNumber + "\n").getBytes());
             out.flush();
 

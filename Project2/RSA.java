@@ -153,7 +153,17 @@ public class RSA {
     }
 
     public static String encrypt(String payload, KU publicKey){
-        return encryption(StringToBigIntegerList(payload + '!'), publicKey).toString();
+        
+        ArrayList<BigInteger> encryptedPayload = encryption(StringToBigIntegerList(payload + '!'), publicKey);
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < encryptedPayload.size(); i++){
+            result.append(encryptedPayload.get(i).toString()).append("!");
+        }
+        return result.toString();
+    }
+
+    public static String sign(String payload, KR privateKey) {
+        return signing(StringToBigIntegerList(payload + '!'), privateKey).toString();
     }
 
     public static String decrypt(String payload, KR privateKey){
@@ -165,6 +175,22 @@ public class RSA {
             last = x + 1;
         }
         ArrayList<BigInteger> decrypted_identity = decryption(encrypted_identity, privateKey);
+        StringBuilder decrypted = new StringBuilder();
+        for (int i = 0; i < decrypted_identity.size(); i++){
+            decrypted.append((char)decrypted_identity.get(i).intValue());
+        }
+        return decrypted.toString();
+    }
+
+    public static String verify(String payload, KU publicKey) {
+        ArrayList<BigInteger> encrypted_identity = new ArrayList<>();
+        int last = 0;
+        int x = 0;
+        while((x = payload.indexOf("!", last)) != -1){
+            encrypted_identity.add(new BigInteger(payload.substring(last, x)));
+            last = x + 1;
+        }
+        ArrayList<BigInteger> decrypted_identity = verifying(encrypted_identity, publicKey);
         StringBuilder decrypted = new StringBuilder();
         for (int i = 0; i < decrypted_identity.size(); i++){
             decrypted.append((char)decrypted_identity.get(i).intValue());
