@@ -50,11 +50,19 @@ public class CTF implements Runnable {
                 OutputStream out = socket.getOutputStream();
 
                 //TODO decrypt the information coming from CLA and the Voter with CTF pirvate key
+                Properties profileProperties = new Properties();
+                try (FileInputStream input = new FileInputStream("ctf_details.txt")) {
+                    profileProperties.load(input);
+                } catch (IOException e) {
+                    System.out.println("Error reading profile file: " + e.getMessage());
+                    throw e;
+                }
 
                 
 
 
                 int nextByte;
+                String buffer = "";
                 StringBuilder clientMsg = new StringBuilder();
 
                 while((nextByte = in.read()) != -1) {
@@ -63,15 +71,21 @@ public class CTF implements Runnable {
                         break;
                     }
                     clientMsg.append((char)nextByte);
+                    buffer += (char)nextByte;
                 }
+
+                System.out.println("Buffer: " + buffer);
                 
                 //Turn the message recieved into a String
                 String clientMsgToString = clientMsg.toString();
+                System.out.println(clientMsgToString);
 
                 //Create variables for the the candidate name and validation number
                 //The first index "[0]" should be the candidate name while the next index is the validation
                 String candidateName = clientMsgToString.split(":")[0];
+                System.out.println("Candidate Name: " + candidateName);
                 String validationNumber = clientMsgToString.split(":")[1];
+                System.out.println("Validation Number: " + validationNumber);
 
 
                 if (clientMsg.substring(0,3).equals("CLA")){
