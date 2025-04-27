@@ -3,6 +3,7 @@
 // - The CTF adds the identification number to the list of people who voted for a particular candidate and adds one to the tally.
 // - After the election ends, the CTF publishes the outcome.
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,7 +11,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-public class CTF {
+import java.util.Properties;
+public class CTF implements Runnable {
+
+    //For easier testing purposes
+    // cd C:\Users\vidal\Documents\CS Classes\Spring 2025\Advanced Information Security CS 5780\CS5780-Projects\Project2
     public static class Candidate {
         public String name;
         public ArrayList<String> validationNumbers = new ArrayList<>();
@@ -22,14 +27,17 @@ public class CTF {
 
     public static ArrayList<String> CLAValidationNumber = new ArrayList<>();
     public static ArrayList<Candidate> candidatesList = new ArrayList<>();
+    private ServerSocket CTFServer;
 
-    public CTF(int p) throws Exception {
-        ServerSocket serverSocket = new ServerSocket(p);
+
+    public CTF(int CTFPort ) throws Exception {
+        CTFServer = new ServerSocket(CTFPort);
     }
 
     public class RequestHandler implements Runnable {
         private Socket socket;
 
+        //Maybe we dont need this socket and only a server
         private RequestHandler(Socket x){
             socket = x;
         }
@@ -41,6 +49,11 @@ public class CTF {
                 InputStream in = socket.getInputStream();
                 OutputStream out = socket.getOutputStream();
 
+                //TODO decrypt the information coming from CLA and the Voter with CTF pirvate key
+
+                
+
+
                 int nextByte;
                 StringBuilder clientMsg = new StringBuilder();
 
@@ -51,8 +64,16 @@ public class CTF {
                     }
                     clientMsg.append((char)nextByte);
                 }
-                // We identify if the message is from CLA or from Voter
-                int validationNumber = clientMsg.split(":")[1];
+                
+                //Turn the message recieved into a String
+                String clientMsgToString = clientMsg.toString();
+
+                //Create variables for the the candidate name and validation number
+                //The first index "[0]" should be the candidate name while the next index is the validation
+                String candidateName = clientMsgToString.split(":")[0];
+                String validationNumber = clientMsgToString.split(":")[1];
+
+
                 if (clientMsg.substring(0,3).equals("CLA")){
                     if (receiveValidationfromCLA(validationNumber) == -1){
                         out.write(("Validation Number: " + validationNumber + " already exists. This should not happen!\n").getBytes());
@@ -62,7 +83,7 @@ public class CTF {
                     out.flush();
                 } else {
                     // This is from voter, proceed to vote
-                    switch(processVote(clientMsg.split(":")[0], clientMsg.split(":")[1])) {
+                    switch(processVote(candidateName, validationNumber)) {
                         case -1:
                             out.write(("Validation Number: " + validationNumber + " does not exist in CTF system!\n").getBytes());
                             break;
@@ -120,7 +141,7 @@ public class CTF {
             boolean candidateFound = false;
             for(int i = 0; i < candidatesList.size(); i++){
                 if(candidatesList.get(i).name.equals(candidate)){
-                    candidatesList.get(i).validationNumbers.push(validationNumber);
+                    candidatesList.get(i).validationNumbers.add(validationNumber);
                     candidateFound = true;
                 }
             }
@@ -140,11 +161,29 @@ public class CTF {
         }
     }
 
+    //Added this run method to run the server, from the Runnable inherited class
+    public void run(){
+        while(true) {
+            try {
+                //.run() wasnt at the end so it wasn't reciving anything
+                new Thread(new RequestHandler(CTFServer.accept())).run();
+            } catch(Exception e) {
+                System.out.println("SERVER: " + e);
+            }
+        }
+    }
+
+    //* Completed get the arguments that you putin the command line 
+    //java CTF.java  1000
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
-            System.out.println("java CTF <port>");
+            System.out.println("java CTF <port>: Define a CTF Server Port");
             System.exit(1);
         }
+
+        System.out.println("CTF socket listening on port: " + args[0]);
+
+        int CTFport = Integer.parseInt(args[0]);
 
         candidatesList.add(new Candidate("John"));
         candidatesList.add(new Candidate("David"));
@@ -152,15 +191,14 @@ public class CTF {
         candidatesList.add(new Candidate("Stephanie"));
         printCandidates();
 
-        System.out.println("CTF socket listening on port: " + args[0]);
-        // Create and start socket server connection, CLA.run() -> RequestHandler(port).run()
-        new CTF(Integer.parseInt(args[0])).run();
+        // Create and start socket server connection, CTF.run() -> RequestHandler(port).run()
+        new CTF(CTFport).run();
     }
 
     public static void printCandidates(){
         System.out.println("============================================================");
         for(int i = 0; i<candidatesList.size(); i++){
-            System.out.println("Candidate: " + candidatesList.get[i].name + " votes: " + candidatesList.get[i].validationNumbers.size().toString());
+            System.out.println("Candidate: " + candidatesList.get(i).name + " votes: " + candidatesList.get(i).validationNumbers.size());
         }
         System.out.println("============================================================");
     }
@@ -169,9 +207,10 @@ public class CTF {
         System.out.println("============================================================");
         System.out.println("Validation Numbers:");
         for(int i = 0; i<CLAValidationNumber.size(); i++){
-            System.out.println("- " + CLAValidationNumber.get[i]);
+            System.out.println("- " + CLAValidationNumber.get(i));
         }
         System.out.println("============================================================");
     }
+
 }
-}
+

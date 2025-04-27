@@ -208,9 +208,10 @@ public class CLA implements Runnable {
         }
     }
 
+    //java CLA.java 1220 127.0.0.1 1000
     public static void main(String[] args) throws Exception {
         if (args.length != 3) {
-            System.out.println("java CLA <port> <CTF_host> <CTF_port>");
+            System.out.println("java CLA <port> <CTF_host> <CTF_Port>");
             System.exit(1);
         }
         System.out.println("CLA socket listening on port: " + args[0]);

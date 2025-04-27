@@ -33,7 +33,7 @@ public class RSA {
         BigInteger n;
 
         /**
-         * Constructs an public key with the given key components.
+         * Constructs an private key with the given key components.
          * @param e Public exponent
          * @param n Mod
          */

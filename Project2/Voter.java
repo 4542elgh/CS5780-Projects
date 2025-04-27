@@ -1,10 +1,13 @@
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Properties;
 
 // Run with java .\Voter.java 127.0.0.1 1220 127.0.0.1 1000
 // Where 127.0.0.1 1220 is your CLA host and port
@@ -69,14 +72,34 @@ public class Voter {
     }
 
     public void castVote(String validationNumber, String candidateName) throws Exception {
+
+        //Todo Encrypt with CTF's public key
+
+        Properties profileProperties = new Properties();
+        try (FileInputStream input = new FileInputStream("users_cla.txt")) {
+            profileProperties.load(input);
+        } catch (IOException e) {
+            System.out.println("Error reading profile file: " + e.getMessage());
+            throw e;
+        }
+
+        
+        //RSA.KU ctfKU = new RSA.KU(new BigInteger(profileProperties.getProperty("CTF.pub").split(",")[0]), new BigInteger(profileProperties.getProperty("CTF.pub").split(",")[1]));
+
+        //ArrayList<BigInteger> encrypted_vote = RSA.encryption(RSA.StringToBigIntegerList(candidateName + "!" + validationNumber), ctfKU);
+
+
+
         // Getting validation number
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
+        
 
         out.write((candidateName + ":" + validationNumber + "\n").getBytes());
         out.flush();
 
-        // Reading validation from CTF server
+        //Shouldnt it be the CTF server?
+        // Reading validation from CLA server
         try{
             int nextByte;
             StringBuilder responseMsg = new StringBuilder();
@@ -93,11 +116,11 @@ public class Voter {
         }
     }
 
+    //java Voter.java 127.0.0.1 1220 127.0.0.1 1000 alice getValidation
+    //                CLA Host CLAPort CTFHost CTFPort
+    // java Voter.java 127.0.0.1 1220 127.0.0.1 1000 validationNumber castVote John
     public static void main(String[] args) throws Exception {
-        if (args.length != 5 && args.length != 6) {
-            System.out.println("java Voter <CLA_host> <CLA_port> <CTF_host> <CTF_port> <voter_name|validationNumber> [getValidation|castVote] <candidate> ");
-            System.exit(1);
-        }
+    
 
         String CLAHost = args[0];
         int CLAPort = Integer.parseInt(args[1]);
