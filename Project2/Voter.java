@@ -76,7 +76,7 @@ public class Voter {
         //Todo Encrypt with CTF's public key
 
         Properties profileProperties = new Properties();
-        try (FileInputStream input = new FileInputStream("ctf_details.txt")) {
+        try (FileInputStream input = new FileInputStream("users_cla.txt")) {
             profileProperties.load(input);
         } catch (IOException e) {
             System.out.println("Error reading profile file: " + e.getMessage());
@@ -95,7 +95,7 @@ public class Voter {
         InputStream in = clientSocket.getInputStream();
         
 
-        out.write((candidateName + "!" + validationNumber + "\n").getBytes());
+        out.write((candidateName + ":" + validationNumber + "\n").getBytes());
         out.flush();
 
         //Shouldnt it be the CTF server?
