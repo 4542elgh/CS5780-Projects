@@ -51,9 +51,6 @@ public class CTF implements Runnable {
 
                 //TODO decrypt the information coming from CLA and the Voter with CTF pirvate key
 
-                
-
-
                 int nextByte;
                 StringBuilder clientMsg = new StringBuilder();
 
