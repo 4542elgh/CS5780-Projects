@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -44,62 +45,82 @@ public class CTF implements Runnable {
 
         public void run() {
             // One should be receiving validation Number from CLA
-            // Two should be receiving vote casted by Voter
-            try{
+            // Two should be receiving vote cast by Voter
+            try {
                 InputStream in = socket.getInputStream();
-                OutputStream out = socket.getOutputStream();
-
-                //TODO decrypt the information coming from CLA and the Voter with CTF pirvate key
-
+                OutputStream out = socket.getOutputStream(); // Changed from System.out to socket output
+        
+                RSA.KR ctfKR = new RSA.KR(new BigInteger("3858296000178602930736151323138739821989174465259043852247191229342460945883302518867017347232674120024226042234326000662621235210891672651600375938715438026953497161800698837867361236438979837229169157590283848507321199036867500643964432474300091266600178273030316460536810111720385283305163506049007"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
+        
                 int nextByte;
-                StringBuilder clientMsg = new StringBuilder();
-
+                StringBuilder buffer = new StringBuilder();
+                String clientMsg = "";
+        
                 while((nextByte = in.read()) != -1) {
                     // Line feed will be indicator the message is finished
                     if (nextByte == '\n') {
+                        clientMsg = RSA.decrypt(buffer.toString(), ctfKR);
                         break;
                     }
-                    clientMsg.append((char)nextByte);
+                    buffer.append((char)nextByte);
                 }
                 
-                //Turn the message recieved into a String
-                String clientMsgToString = clientMsg.toString();
-
-                //Create variables for the the candidate name and validation number
-                //The first index "[0]" should be the candidate name while the next index is the validation
-                String candidateName = clientMsgToString.split(":")[0];
-                String validationNumber = clientMsgToString.split(":")[1];
-
-
-                if (clientMsg.substring(0,3).equals("CLA")){
-                    if (receiveValidationfromCLA(validationNumber) == -1){
+                // System.out.println("CTF server received decrypted: " + clientMsg);
+        
+                // Parse the message to determine if it's from CLA or Voter
+                if (clientMsg.startsWith("CLA:")) {
+                    // Message from CLA with validation number
+                    String validationNumber = clientMsg.substring(4); // Extract validation number after "CLA:"
+                    
+                    if (receiveValidationfromCLA(validationNumber) == -1) {
                         out.write(("Validation Number: " + validationNumber + " already exists. This should not happen!\n").getBytes());
                     } else {
                         out.write(("Validation Number: " + validationNumber + " add successful!\n").getBytes());
                     }
                     out.flush();
                 } else {
-                    // This is from voter, proceed to vote
-                    switch(processVote(candidateName, validationNumber)) {
-                        case -1:
-                            out.write(("Validation Number: " + validationNumber + " does not exist in CTF system!\n").getBytes());
-                            break;
-                        case 0:
-                            out.write(("Validation Number: " + validationNumber + " is valid but cannot voting candidate!\n").getBytes());
-                            break;
-                        case 1:
-                            out.write(("Validation Number: " + validationNumber + " is valid and your vote has been recorded!\n").getBytes());
-                            printCandidates();
-                            break;
+                    // Message from voter with candidate and validation number
+                    String[] parts = clientMsg.split("!");
+                    if (parts.length >= 2) {
+                        String candidateName = parts[0];
+                        String validationNumber = parts[1];
+                        
+                        switch(processVote(candidateName, validationNumber)) {
+                            case -1:
+                                out.write(("Validation Number: " + validationNumber + " does not exist in CTF system!\n").getBytes());
+                                break;
+                            case 0:
+                                out.write(("Validation Number: " + validationNumber + " is valid but cannot find voting candidate!\n").getBytes());
+                                break;
+                            case 1:
+                                out.write(("Validation Number: " + validationNumber + " is valid and your vote has been recorded!\n").getBytes());
+                                printCandidates();
+                                break;
+                        }
+                        out.flush();
+                    } else {
+                        out.write("Invalid message format\n".getBytes());
+                        out.flush();
                     }
-                    out.flush();
                 }
+                
+                socket.close();  // Make sure to close the socket when done
+                
             } catch (SocketException e) {
                 System.out.println("Socket Exception: " + e);
-            } catch (IOException e){
+            } catch (IOException e) {
                 System.out.println("IO Exception: " + e);
+            } catch (Exception e) {
+                System.out.println("General Exception: " + e);
             } finally {
-                System.out.println("Disconnecting...");
+                // System.out.println("Connection handled, disconnecting...");
+                try {
+                    if (socket != null && !socket.isClosed()) {
+                        socket.close();
+                    }
+                } catch (IOException e) {
+                    System.out.println("Error closing socket: " + e);
+                }
             }
         }
     }
@@ -107,6 +128,7 @@ public class CTF implements Runnable {
     public static int receiveValidationfromCLA(String validationNumber){
         boolean foundValidation = false;
         for(int i = 0; i < CLAValidationNumber.size(); i++){
+            System.out.println("RECEIVE VALIDATION FROM CLA\n\n\n");
             if (CLAValidationNumber.get(i).equals(validationNumber)){
                 foundValidation = true;
                 break;
@@ -163,7 +185,7 @@ public class CTF implements Runnable {
         while(true) {
             try {
                 //.run() wasnt at the end so it wasn't reciving anything
-                new Thread(new RequestHandler(CTFServer.accept())).run();
+                new Thread(new RequestHandler(CTFServer.accept())).start();
             } catch(Exception e) {
                 System.out.println("SERVER: " + e);
             }

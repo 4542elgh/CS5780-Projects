@@ -156,9 +156,10 @@ public class RSA {
         
         ArrayList<BigInteger> encryptedPayload = encryption(StringToBigIntegerList(payload + '!'), publicKey);
         StringBuilder result = new StringBuilder();
-        for (int i = 0; i < encryptedPayload.size(); i++){
+        for (int i = 0; i < encryptedPayload.size()-1; i++){
             result.append(encryptedPayload.get(i).toString()).append("!");
         }
+        result.append(encryptedPayload.get(encryptedPayload.size()-1).toString());
         return result.toString();
     }
 

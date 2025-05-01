@@ -43,6 +43,7 @@ public class CLA implements Runnable {
     // CLA should be acting as a Client to send validation to CTF
     public CLA(int CLAPort, String CTFHost, int CTFPort) throws Exception {
         serverSocket = new ServerSocket(CLAPort);
+        System.out.println("CLA socket listening on port: " + CLAPort);
         this.CTFHost = CTFHost;
         this.CTFPort = CTFPort;
     }
@@ -165,22 +166,31 @@ public class CLA implements Runnable {
     public class CTFClient {
         private Socket CTFClientSocket;
         private int validationNumber = -1;
-
+    
         public CTFClient(String host, int port, int validationNumber) throws Exception {
             CTFClientSocket = new Socket(host, port);
             this.validationNumber = validationNumber;
         }
-
+    
         public void run() throws Exception {
             // Register validation number to CTF
             OutputStream out = CTFClientSocket.getOutputStream();
             InputStream in = CTFClientSocket.getInputStream();
+            
+            // Problem 1: No encryption is used, but CTF expects encrypted data
+            // Problem 2: The format sent doesn't match what CTF expects
+            
+            // Fix: Encrypt the validation number properly and format it correctly
             RSA.KU ctfKU = new RSA.KU(new BigInteger("2626397133379119473724051008683004030359875684611482215626489792880260882977831498475603342203258535446137757378503683648443659636668531934934174001743"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
-            out.write(("CLA:" + this.validationNumber + "\n").getBytes());
+            
+            // Send encrypted validation number with proper format
+            String message = "CLA:" + this.validationNumber;
+            String encryptedMessage = RSA.encrypt(message, ctfKU);
+            out.write((encryptedMessage + "\n").getBytes());
             out.flush();
-
-            // Reading validation from CLA server
-            try{
+    
+            // Reading response from CTF server
+            try {
                 int nextByte;
                 StringBuilder responseMsg = new StringBuilder();
                 while((nextByte = in.read()) != -1) {
@@ -189,8 +199,8 @@ public class CLA implements Runnable {
                     }
                     responseMsg.append((char)nextByte);
                 }
-                System.out.println(responseMsg);
-                out.close();
+                System.out.println("CTF Server response: " + responseMsg);
+                CTFClientSocket.close();  // Close socket after receiving response
             } catch (Exception e){
                 System.out.println("CTF server return error: " + e);
             }
@@ -201,7 +211,7 @@ public class CLA implements Runnable {
         while(true) {
             try {
                 // Accept a connection and run handler in a new thread
-                new Thread(new RequestHandler(serverSocket.accept(), this.CTFHost, this.CTFPort)).run();
+                new Thread(new RequestHandler(serverSocket.accept(), this.CTFHost, this.CTFPort)).start();
             } catch(Exception e) {
                 System.out.println("SERVER: " + e);
             }
@@ -214,13 +224,14 @@ public class CLA implements Runnable {
             System.out.println("java CLA <port> <CTF_host> <CTF_Port>");
             System.exit(1);
         }
-        System.out.println("CLA socket listening on port: " + args[0]);
         // Create and start socket server connection, CLA.run() -> RequestHandler(port).run()
         int CLAPort = Integer.parseInt(args[0]);
 
         String CTFHost = args[1];
         int CTFPort = Integer.parseInt(args[2]);
 
-        new CLA(CLAPort, CTFHost, CTFPort).run();
+        CLA cla = new CLA(CLAPort, CTFHost, CTFPort);
+        cla.run();
+        // System.out.println("CLA server started");
     }
 }

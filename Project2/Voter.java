@@ -20,7 +20,7 @@ public class Voter {
         clientSocket = new Socket(host, port);
     }
     
-    public void getValidationNumber(String voterName, String password) throws Exception {
+    public void getValidationNumber(String voterName) throws Exception {
         // Getting validation number
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
@@ -40,6 +40,7 @@ public class Voter {
         RSA.KR voterKR = new RSA.KR(new BigInteger(keys[0].trim()), new BigInteger(keys[1].trim()));
         RSA.KU claKU = new RSA.KU(new BigInteger("2752699802175698850321457863889903443914071654066322070974944948003506590573712261860530370923018405259337417184753389933831681398543528970205492004681"), new BigInteger("4688740870912406875006445911106095067632194812574324514705835239373868219036801331852030657769767572075521450139675754090365663102562872514543748753030127981939700095555970656809128816220808822748574282202662756315734854454348063837568357951945429293674709798292836476841014231042515822865869861231333")); // Placeholder for public key
         
+        String password = keys[2].trim();
         ArrayList<BigInteger> encrypted_identity = RSA.encryption(RSA.StringToBigIntegerList(voterName + "!" + password), claKU);
         
         for (int i = 0; i < encrypted_identity.size(); i++){
@@ -73,29 +74,23 @@ public class Voter {
 
     public void castVote(String validationNumber, String candidateName) throws Exception {
 
-        //Todo Encrypt with CTF's public key
-
-        Properties profileProperties = new Properties();
-        try (FileInputStream input = new FileInputStream("users_cla.txt")) {
-            profileProperties.load(input);
-        } catch (IOException e) {
-            System.out.println("Error reading profile file: " + e.getMessage());
-            throw e;
-        }
 
         
-        //RSA.KU ctfKU = new RSA.KU(new BigInteger(profileProperties.getProperty("CTF.pub").split(",")[0]), new BigInteger(profileProperties.getProperty("CTF.pub").split(",")[1]));
+        RSA.KU ctfKU = new RSA.KU(new BigInteger("2626397133379119473724051008683004030359875684611482215626489792880260882977831498475603342203258535446137757378503683648443659636668531934934174001743"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
+        ArrayList<BigInteger> encrypted_vote = RSA.encryption(RSA.StringToBigIntegerList(candidateName + "!" + validationNumber), ctfKU);
 
-        //ArrayList<BigInteger> encrypted_vote = RSA.encryption(RSA.StringToBigIntegerList(candidateName + "!" + validationNumber), ctfKU);
-
-
+        
 
         // Getting validation number
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
         
-
-        out.write((candidateName + ":" + validationNumber + "\n").getBytes());
+        // Send encrypted vote to CTF server
+        for (int i = 0; i < encrypted_vote.size(); i++){
+            out.write(encrypted_vote.get(i).toString().getBytes());
+            out.write('!');
+        }
+        out.write('\n');
         out.flush();
 
         //Shouldnt it be the CTF server?
@@ -130,10 +125,23 @@ public class Voter {
 
         String action = args[5];
 
+        File userFile = new File(args[4] + ".txt");
+        if (!userFile.exists()){
+            System.out.println("User file not found");
+            return;
+        }
+        // Read the public key from the file
+        String[] keys = null;
+        try (InputStream input = new FileInputStream(userFile)) {
+            keys = new String(input.readAllBytes()).split(",");
+        } catch (Exception e) {
+            System.out.println("Error reading user file: " + e.getMessage());
+            throw e;
+        }
+
         if (action.equals("getValidation")){
             String voterName = args[4];
-            String voterPassword = "abc123"; // Placeholder for password
-            new Voter(CLAHost, CLAPort).getValidationNumber(voterName, voterPassword);
+            new Voter(CLAHost, CLAPort).getValidationNumber(voterName);
         } else if (action.equals("castVote")){
             String validationNumber = args[4];
             String candidateName = args[6];
