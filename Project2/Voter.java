@@ -125,21 +125,22 @@ public class Voter {
 
         String action = args[5];
 
-        File userFile = new File(args[4] + ".txt");
-        if (!userFile.exists()){
-            System.out.println("User file not found");
-            return;
-        }
-        // Read the public key from the file
-        String[] keys = null;
-        try (InputStream input = new FileInputStream(userFile)) {
-            keys = new String(input.readAllBytes()).split(",");
-        } catch (Exception e) {
-            System.out.println("Error reading user file: " + e.getMessage());
-            throw e;
-        }
 
         if (action.equals("getValidation")){
+            File userFile = new File(args[4] + ".txt");
+            if (!userFile.exists()){
+                System.out.println("User file not found");
+                return;
+            }
+            // Read the public key from the file
+            String[] keys = null;
+            try (InputStream input = new FileInputStream(userFile)) {
+                keys = new String(input.readAllBytes()).split(",");
+            } catch (Exception e) {
+                System.out.println("Error reading user file: " + e.getMessage());
+                throw e;
+            }
+
             String voterName = args[4];
             new Voter(CLAHost, CLAPort).getValidationNumber(voterName);
         } else if (action.equals("castVote")){
