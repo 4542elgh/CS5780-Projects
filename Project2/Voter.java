@@ -21,7 +21,7 @@ public class Voter {
     }
     
     public void getValidationNumber(String voterName) throws Exception {
-        // Getting validation number
+        //Open the voter file
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
         File voterFile = new File(voterName + ".txt");
@@ -37,12 +37,15 @@ public class Voter {
             System.out.println("Error reading voter file: " + e.getMessage());
             throw e;
         }
+        //Use our RSA functions to generate a private key pair for the voter and a public key pair for the CLA
         RSA.KR voterKR = new RSA.KR(new BigInteger(keys[0].trim()), new BigInteger(keys[1].trim()));
         RSA.KU claKU = new RSA.KU(new BigInteger("2752699802175698850321457863889903443914071654066322070974944948003506590573712261860530370923018405259337417184753389933831681398543528970205492004681"), new BigInteger("4688740870912406875006445911106095067632194812574324514705835239373868219036801331852030657769767572075521450139675754090365663102562872514543748753030127981939700095555970656809128816220808822748574282202662756315734854454348063837568357951945429293674709798292836476841014231042515822865869861231333")); // Placeholder for public key
         
+        //Get the password from the voter file
         String password = keys[2].trim();
         ArrayList<BigInteger> encrypted_identity = RSA.encryption(RSA.StringToBigIntegerList(voterName + "!" + password), claKU);
         
+        //Encrypt the user's identity
         for (int i = 0; i < encrypted_identity.size(); i++){
             out.write(encrypted_identity.get(i).toString().getBytes());
             out.write('!');
@@ -50,7 +53,8 @@ public class Voter {
         // Send encrypted identity to CLA server
         out.write('\n');
         out.flush();
-        // Reading validation from CLA server
+
+        // Reading encrypted validation from CLA server
         try{
             int nextByte;
             StringBuilder responseMsg = new StringBuilder();
@@ -74,12 +78,9 @@ public class Voter {
 
     public void castVote(String validationNumber, String candidateName) throws Exception {
 
-
-        
+        //Generate ctf public key pair
         RSA.KU ctfKU = new RSA.KU(new BigInteger("2626397133379119473724051008683004030359875684611482215626489792880260882977831498475603342203258535446137757378503683648443659636668531934934174001743"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
         ArrayList<BigInteger> encrypted_vote = RSA.encryption(RSA.StringToBigIntegerList(candidateName + "!" + validationNumber), ctfKU);
-
-        
 
         // Getting validation number
         OutputStream out = clientSocket.getOutputStream();
@@ -93,7 +94,6 @@ public class Voter {
         out.write('\n');
         out.flush();
 
-        //Shouldnt it be the CTF server?
         // Reading validation from CLA server
         try{
             int nextByte;
@@ -116,7 +116,7 @@ public class Voter {
     // java Voter.java 127.0.0.1 1220 127.0.0.1 1000 validationNumber castVote John
     public static void main(String[] args) throws Exception {
     
-
+        //Get the arguments from the voter
         String CLAHost = args[0];
         int CLAPort = Integer.parseInt(args[1]);
 

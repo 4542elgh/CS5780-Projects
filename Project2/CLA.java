@@ -61,6 +61,7 @@ public class CLA implements Runnable {
 
         public void run() {
             try{
+                //Get the user details that the CLA has stored
                 InputStream in = socket.getInputStream();
                 OutputStream out = socket.getOutputStream();
                 Properties profileProperties = new Properties();
@@ -73,11 +74,15 @@ public class CLA implements Runnable {
 
                 int nextByte;
                 String voter = "", password = "";
+
+                //Generate the private key of the CLA
                 RSA.KR claKR = new RSA.KR(new BigInteger("2294623918866020884053396158761717371456600872053687952714581704730245302466597587647191046872571504872353524882987251273031113333967586716601221459041858136479784611059443308403092375173160156273326918202441309905181926490227303386321579033482919381568941967118127028467058261831999926010767704782657"), new BigInteger("4688740870912406875006445911106095067632194812574324514705835239373868219036801331852030657769767572075521450139675754090365663102562872514543748753030127981939700095555970656809128816220808822748574282202662756315734854454348063837568357951945429293674709798292836476841014231042515822865869861231333")); // Placeholder for private key
                 String buffer = "";
                 while((nextByte = in.read()) != -1) {
                     // Line feed will be indicator the message is finished
                     if (nextByte == '\n') {
+                        //Decrypt the incoming data in the buffer with the CLA private keys
+                        //Use the ! to split the buffer and each section between the ! will be a different piece of data
                         String[] parts = RSA.decrypt(buffer, claKR).split("!");
                         voter = parts[0];
                         password = parts[1];
@@ -86,6 +91,7 @@ public class CLA implements Runnable {
                     buffer += (char)nextByte;
                 }
 
+                //Check if the voter public key is present
                 if (profileProperties.getProperty(voter + ".public_key") == null){
                     System.out.println("Voter not found");
                     out.write("-1\n".getBytes());
@@ -94,6 +100,7 @@ public class CLA implements Runnable {
                     return;
                 }
 
+                //Check if the password of the voter matches with the password the CLA has
                 if (!profileProperties.getProperty(voter + ".password").equals(password)) {
                     System.out.println("Voter password mismatch");
                     out.write("-1\n".getBytes());
@@ -104,7 +111,10 @@ public class CLA implements Runnable {
 
                 System.out.println("Voter: " + voter + " Password: " + password);
                 int validationNumber = getValidationNumber(voter);
+
+                //Get the users public key
                 RSA.KU voterKU = new RSA.KU(new BigInteger(profileProperties.getProperty(voter + ".public_key").split(",")[0]), new BigInteger(profileProperties.getProperty(voter + ".public_key").split(",")[1]));
+                //Send the validation number to the voter
                 sendValidationToVoter(out, voter, voterKU, validationNumber);
                 new CTFClient(this.CTFHost, this.CTFPort, validationNumber).run();
             } catch (SocketException e) {
@@ -138,6 +148,7 @@ public class CLA implements Runnable {
                 break;
             }
         }
+        //Add the validation number attacjed to the voter id if validation number is a new one
         voterList.add(new VoterValidation(voterId, validationNumber));
         return validationNumber;
     }
@@ -149,6 +160,7 @@ public class CLA implements Runnable {
                 out.write("-1\n".getBytes());
             } else {
                 System.out.println("Return " + voter + " a validation number: " + validationNumber);
+                //Send the encrypted validation number to the voter
                 out.write(RSA.encrypt("" + validationNumber, voterKU).getBytes());
                 out.write("\n".getBytes());
             }
@@ -184,7 +196,10 @@ public class CLA implements Runnable {
             RSA.KU ctfKU = new RSA.KU(new BigInteger("2626397133379119473724051008683004030359875684611482215626489792880260882977831498475603342203258535446137757378503683648443659636668531934934174001743"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
             
             // Send encrypted validation number with proper format
+            //WE add "CLA" at the start so the CTF can understand where the validation number is coming from
+            // and what to do with its
             String message = "CLA:" + this.validationNumber;
+            //Encrypt message with the ctf public keys
             String encryptedMessage = RSA.encrypt(message, ctfKU);
             out.write((encryptedMessage + "\n").getBytes());
             out.flush();
@@ -220,6 +235,7 @@ public class CLA implements Runnable {
 
     //java CLA.java 1220 127.0.0.1 1000
     public static void main(String[] args) throws Exception {
+        //There has to be 3 arguments
         if (args.length != 3) {
             System.out.println("java CLA <port> <CTF_host> <CTF_Port>");
             System.exit(1);

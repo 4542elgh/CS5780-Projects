@@ -26,11 +26,13 @@ public class CTF implements Runnable {
         }
     }
 
+    //Keep a list of the validation numbers and the candidates that voter's can vote for
     public static ArrayList<String> CLAValidationNumber = new ArrayList<>();
     public static ArrayList<Candidate> candidatesList = new ArrayList<>();
     private ServerSocket CTFServer;
 
 
+    //Create server port
     public CTF(int CTFPort ) throws Exception {
         CTFServer = new ServerSocket(CTFPort);
     }
@@ -50,6 +52,7 @@ public class CTF implements Runnable {
                 InputStream in = socket.getInputStream();
                 OutputStream out = socket.getOutputStream(); // Changed from System.out to socket output
         
+                //Create the CTF private key pair
                 RSA.KR ctfKR = new RSA.KR(new BigInteger("3858296000178602930736151323138739821989174465259043852247191229342460945883302518867017347232674120024226042234326000662621235210891672651600375938715438026953497161800698837867361236438979837229169157590283848507321199036867500643964432474300091266600178273030316460536810111720385283305163506049007"), new BigInteger("6470971049575022323584066955179447090537310628982705159278108836959287258480825015769888337489211909496702625461027245224010775046279832544542060113946768350707643015188465108385343861931539063735908361865660658207991062229511162191872241529013803220408935866345741588540507792747255692360084684888001"));
         
                 int nextByte;
@@ -59,15 +62,15 @@ public class CTF implements Runnable {
                 while((nextByte = in.read()) != -1) {
                     // Line feed will be indicator the message is finished
                     if (nextByte == '\n') {
+                        //Decrypt incoming messages with the CTF private keys
                         clientMsg = RSA.decrypt(buffer.toString(), ctfKR);
                         break;
                     }
                     buffer.append((char)nextByte);
                 }
-                
-                // System.out.println("CTF server received decrypted: " + clientMsg);
         
                 // Parse the message to determine if it's from CLA or Voter
+                //This is so the CTF knows if it recieves data from the CLA or a Voter
                 if (clientMsg.startsWith("CLA:")) {
                     // Message from CLA with validation number
                     String validationNumber = clientMsg.substring(4); // Extract validation number after "CLA:"
@@ -80,11 +83,14 @@ public class CTF implements Runnable {
                     out.flush();
                 } else {
                     // Message from voter with candidate and validation number
+                    //Split the message with ! to break it up into parts
                     String[] parts = clientMsg.split("!");
+                    //Check if the parts length is 2 or more, any less is invalid
                     if (parts.length >= 2) {
                         String candidateName = parts[0];
                         String validationNumber = parts[1];
                         
+                        //Process the vote with the candidate name and validation number recieved
                         switch(processVote(candidateName, validationNumber)) {
                             case -1:
                                 out.write(("Validation Number: " + validationNumber + " does not exist in CTF system!\n").getBytes());
@@ -127,18 +133,22 @@ public class CTF implements Runnable {
 
     public static int receiveValidationfromCLA(String validationNumber){
         boolean foundValidation = false;
+        //Loop through our validation number list
         for(int i = 0; i < CLAValidationNumber.size(); i++){
             System.out.println("RECEIVE VALIDATION FROM CLA\n\n\n");
+            //Check to see if the recieved validation number is in the list
             if (CLAValidationNumber.get(i).equals(validationNumber)){
                 foundValidation = true;
                 break;
             }
         }
 
+        //If found notify the CTF and stop the process
         if (foundValidation){
             System.out.println("CTF already contain validation number: " + validationNumber + ". This should not happen.");
             return -1;
-        } else {
+            
+        } else { // Add the validation number to the list
             CLAValidationNumber.add(validationNumber);
             System.out.println("Validation Number: " + validationNumber + " has been added to CTF system successfully.");
             printCLAValidationNumber();
@@ -148,6 +158,8 @@ public class CTF implements Runnable {
 
     public static int processVote(String candidate, String validationNumber){
         boolean foundValidation = false;
+        //Loop through the list and see if the validation number is already present
+        //If found remove the validation number from the list
         for(int i = 0; i < CLAValidationNumber.size(); i++){
             if (CLAValidationNumber.get(i).equals(validationNumber)){
                 foundValidation = true;
@@ -156,8 +168,10 @@ public class CTF implements Runnable {
             }
         }
 
+        //Check if the candidate is found in the list
         if (foundValidation){
             boolean candidateFound = false;
+            //Loop through the candidate list and see if the candidate in the vote request is present
             for(int i = 0; i < candidatesList.size(); i++){
                 if(candidatesList.get(i).name.equals(candidate)){
                     candidatesList.get(i).validationNumbers.add(validationNumber);
@@ -165,6 +179,7 @@ public class CTF implements Runnable {
                 }
             }
 
+            //Found the candidate
             if (candidateFound){
                 System.out.println("Validation number " + validationNumber + " casted to candidate successfully.");
                 return 1;
